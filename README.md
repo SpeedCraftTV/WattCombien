@@ -10,7 +10,7 @@ Site statique francophone pour estimer et comparer la consommation électrique d
 - Neuf simulateurs dédiés et six guides éditoriaux.
 - Pages Mentions légales, Confidentialité et Contact à relire et compléter avant lancement.
 - Sitemap et robots.txt à personnaliser avec l’URL publique.
-- AdSense est configuré, mais son script tiers ne se charge qu’après un signal CMP TCF valide. Aucun outil d’analyse ni font externe n’est chargé.
+- AdSense et Microsoft Clarity sont configurés. Leurs scripts tiers ne se chargent qu’après les choix CMP requis. Aucune police externe n’est chargée.
 
 ## Hypothèses et calculs
 
@@ -75,11 +75,15 @@ Les règles et adresses IP de GitHub Pages peuvent évoluer : vérifiez la docum
 
 Le dépôt est un site statique sans compilation. Dans **Cloudflare Dashboard → Workers & Pages → Create application → Pages → Connect to Git**, sélectionnez le dépôt et la branche à publier. Choisissez un préréglage **None** ou équivalent, laissez la commande de build vide et définissez le répertoire de sortie sur la racine du dépôt (`.`). Après le premier déploiement, vérifiez `https://wattcombien.pages.dev/ads.txt` et une page de simulateur. Le workflow `.github/workflows/deploy.yml` est destiné à GitHub Pages et n’est pas requis pour le déploiement Cloudflare Pages.
 
-## Google AdSense et consentement
+## Google AdSense, Microsoft Clarity et consentement
 
-L’identifiant éditeur fourni est configuré dans `js/config.js` et `ads.txt`. Chaque page charge le petit module local `js/adsense.js`, mais celui-ci ne contacte pas Google en l’absence d’une CMP qui expose l’API IAB TCF 2.2. Dans les territoires concernés, le script publicitaire est ajouté seulement après un signal autorisant les finalités TCF 1, 3 et 4 ainsi que le fournisseur Google. Aucun bloc publicitaire manuel n’est ajouté.
+L’identifiant éditeur AdSense est configuré dans `js/config.js` et `ads.txt`. Chaque page charge le module local `js/adsense.js`, qui importe aussi le chargeur Clarity. Les deux modules partagent l’écoute de l’API IAB TCF 2.2 et appliquent des finalités séparées. AdSense se charge après un signal autorisant les finalités TCF 1, 3 et 4 et le fournisseur Google. Clarity se charge uniquement après un signal autorisant les finalités 1 et 8. Son identifiant `zbctlkmftd` est défini dans `js/config.js`. Aucun script tiers n’est ajouté statiquement aux pages.
 
-Avant de mettre les annonces en service, configurez dans Cloudflare Pages une CMP certifiée par Google et compatible avec les exigences Google et IAB TCF applicables en France et dans l’EEE, au Royaume-Uni et en Suisse. Installez son script avant le chargeur AdSense afin que `__tcfapi` soit disponible. Configurez les choix de l’utilisateur, le retrait du consentement et les informations sur les partenaires et cookies. Testez le refus, l’acceptation et le retrait dans les navigateurs concernés. Sans cette CMP ou sans signal conforme, le script AdSense reste inactif. La configuration technique ne garantit pas l’approbation du site par Google.
+Avant de mettre ces outils en service, configurez dans Cloudflare Pages une CMP compatible avec IAB TCF 2.2 et certifiée par Google pour les annonces là où cela est requis. Installez son script avant le chargeur local afin que `__tcfapi` soit disponible. La CMP doit offrir le choix des finalités de mesure et de publicité, ainsi que le retrait du consentement. Sans signal CMP valide, aucun script Clarity ou AdSense n’est chargé.
+
+Le module Clarity envoie également l’API `consentv2` de Microsoft avec les états `analytics_Storage` et `ad_Storage`. Le stockage analytique reflète le choix TCF 1 et 8. Le stockage publicitaire Microsoft reste refusé, car la CMP configurée pour AdSense ne représente pas nécessairement un consentement à Microsoft Advertising. En cas de retrait du consentement analytique après chargement de Clarity, le nouvel état refusé est transmis. Microsoft précise qu’en mode sans consentement, Clarity peut collecter des données sans cookies avec des fonctionnalités limitées. Si cette collecte n’est pas souhaitée après retrait, configurez et vérifiez le mode de consentement et les réglages du projet Clarity avant publication.
+
+Dans le projet Clarity, activez **Settings → Setup → Consent Mode**. Vérifiez le masquage des champs et contenus sensibles, les données collectées et les durées de conservation. Testez un refus, une acceptation, puis un retrait du choix. Une CMP fonctionnelle n’est actuellement pas incluse dans le dépôt. Consultez la [documentation Microsoft sur Consent Mode](https://learn.microsoft.com/en-us/clarity/setup-and-installation/consent-mode) et l’[API Consent V2](https://learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-consent-api-v2). La présence des scripts ne garantit pas l’approbation AdSense ni la conformité juridique de la configuration.
 
 ## Search Console et sitemap
 
@@ -91,8 +95,8 @@ Avant de mettre les annonces en service, configurez dans Cloudflare Pages une CM
 
 - Complétez les champs entre crochets de `pages/mentions-legales.html` avec les informations réelles de l’éditeur et vérifiez les obligations applicables avant publication.
 - La page Contact pointe vers les issues du dépôt GitHub. Vérifiez que ce dépôt est public et les issues activées, ou remplacez le lien par un canal de contact réel. Ne publiez pas une adresse inventée.
-- La politique de confidentialité décrit les calculs locaux, l’enregistrement volontaire, le partage par URL et le chargement publicitaire conditionné par la CMP.
-- Aucun outil d’analyse facultatif n’est installé. Aucune CMP fictive n’est fournie. AdSense reste inactif tant qu’une véritable CMP compatible n’est pas configurée.
+- La politique de confidentialité décrit les calculs locaux, l’enregistrement volontaire, le partage par URL, Clarity et le chargement des scripts conditionné par la CMP.
+- Aucun faux bandeau ni CMP fictive n’est fourni. Clarity et AdSense restent inactifs tant qu’une CMP compatible n’est pas configurée et qu’un signal de consentement approprié n’est pas reçu.
 
 ## AdSense
 
@@ -110,7 +114,7 @@ pages/
   contact.html
 css/styles.css
 js/             (calculs, interface, SEO, configuration, simulateurs)
-                (chargeur AdSense soumis au consentement CMP)
+                (chargeurs AdSense et Clarity soumis au consentement CMP)
 assets/favicon.svg
 tests/          (tests Node intégrés, sans dépendances)
 package.json    (type de modules et commande npm test)

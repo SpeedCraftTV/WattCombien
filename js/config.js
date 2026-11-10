@@ -6,5 +6,9 @@ export const config = {
     enabled: true,
     publisherId: "ca-pub-5689496403962976",
     slots: {}
+  },
+  clarity: {
+    enabled: true,
+    projectId: "zbctlkmftd"
   }
 };

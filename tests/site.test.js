@@ -40,16 +40,27 @@ test("les textes HTML et les chaînes de l’interface ne contiennent pas de tir
   }
 });
 
-test("chaque page publique charge une seule fois le garde CMP AdSense et aucune balise publicitaire sans consentement", async () => {
+test("chaque page publique charge une seule fois le garde CMP et aucun script tiers sans consentement", async () => {
   for (const file of await htmlFiles()) {
     const html = await readFile(file, "utf8");
     const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)].map((match) => match[1]);
     assert.equal(scripts.filter((src) => src.endsWith("/adsense.js")).length, 1, `${path.relative(root, file)} doit charger une fois le garde AdSense`);
     assert.equal(scripts.filter((src) => src.includes("adsbygoogle.js")).length, 0, `${path.relative(root, file)} ne doit pas charger AdSense avant le consentement`);
+    assert.equal(scripts.filter((src) => src.includes("clarity.ms/tag")).length, 0, `${path.relative(root, file)} ne doit pas charger Clarity avant le consentement`);
   }
 
   const adsTxt = await readFile(path.join(root, "ads.txt"), "utf8");
   assert.equal(adsTxt.trim(), "google.com, pub-5689496403962976, DIRECT, f08c47fec0942fa0");
+});
+
+test("Clarity uses the configured project ID and loads asynchronously only from the CMP loader", async () => {
+  const config = await readFile(path.join(root, "js", "config.js"), "utf8");
+  const loader = await readFile(path.join(root, "js", "clarity.js"), "utf8");
+  assert.match(config, /projectId:\s*"zbctlkmftd"/);
+  assert.match(loader, /script\.async\s*=\s*true/);
+  assert.match(loader, /https:\/\/www\.clarity\.ms\/tag\/\$\{encodeURIComponent\(config\.clarity\.projectId\)\}/);
+  assert.match(loader, /analytics_Storage:\s*analyticsGranted\s*\?\s*"granted"\s*:\s*"denied"/);
+  assert.match(loader, /ad_Storage:\s*"denied"/);
 });
 
 test("tous les liens et ressources locaux existent et les fragments sont valides", async () => {
