@@ -89,6 +89,46 @@ test("Cloudflare Web Analytics uses its configured token and loads once after CM
   assert.match(entry, /import "\.\/cloudflare-analytics\.js"/);
 });
 
+test("the contact form stays disabled until its public configuration and legal settings are complete", async () => {
+  const config = await readFile(path.join(root, "js", "config.js"), "utf8");
+  const loader = await readFile(path.join(root, "js", "contact-form.js"), "utf8");
+  const page = await readFile(path.join(root, "pages", "contact.html"), "utf8");
+  assert.match(config, /contact:\s*\{\s*enabled:\s*false/);
+  assert.match(config, /contactRetentionDays:\s*null/);
+  assert.match(loader, /config\.contact\.enabled/);
+  assert.match(loader, /config\.legal\.contactRetentionDays/);
+  assert.match(loader, /turnstile\/v0\/api\.js/);
+  assert.match(page, /Le formulaire n’est pas encore ouvert/);
+  assert.match(page, /<fieldset id="contact-fields" disabled>/);
+});
+
+test("the contact database migration denies public access and grants only Worker insertion", async () => {
+  const migration = await readFile(path.join(root, "supabase", "migrations", "20261110000000_create_contact_messages.sql"), "utf8");
+  const worker = await readFile(path.join(root, "worker", "src", "index.js"), "utf8");
+  const workerConfig = await readFile(path.join(root, "worker", "wrangler.toml"), "utf8");
+  assert.match(migration, /enable row level security/i);
+  assert.match(migration, /revoke all .* from public, anon, authenticated, service_role/i);
+  assert.match(migration, /grant insert .* to service_role/i);
+  assert.doesNotMatch(migration, /create policy/i);
+  assert.match(worker, /siteverify/);
+  assert.match(worker, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(worker, /return=minimal/);
+  assert.match(workerConfig, /CONTACT_ENABLED = "false"/);
+});
+
+test("every page uses the same visitor-facing footer", async () => {
+  for (const file of await htmlFiles()) {
+    const html = await readFile(file, "utf8");
+    const footers = [...html.matchAll(/<footer class="site-footer">([\s\S]*?)<\/footer>/g)];
+    assert.equal(footers.length, 1, `${path.relative(root, file)} doit avoir un seul pied de page`);
+    assert.match(footers[0][1], /Calculs indicatifs selon les paramètres que vous renseignez\./);
+    assert.match(footers[0][1], /Outil gratuit, sans inscription\./);
+    assert.match(footers[0][1], /Mentions légales/);
+    assert.match(footers[0][1], /Confidentialité/);
+    assert.match(footers[0][1], /Contact/);
+  }
+});
+
 test("tous les liens et ressources locaux existent et les fragments sont valides", async () => {
   const files = await htmlFiles();
   const checks = [];

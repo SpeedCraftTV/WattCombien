@@ -14,5 +14,22 @@ export const config = {
   cloudflareAnalytics: {
     enabled: true,
     token: "f53bdf1fc5cd4b86925ed77fcefbf8a3"
+  },
+  contact: {
+    enabled: false,
+    workerUrl: "",
+    turnstileSiteKey: ""
+  },
+  legal: {
+    publisherName: "",
+    legalForm: "",
+    publicationAddress: "",
+    registrationDetails: "",
+    publicationDirector: "",
+    contactEmail: "",
+    privacyEmail: "",
+    contactRetentionDays: null,
+    contactLegalBasis: "",
+    cloudflareHostingDetails: ""
   }
 };

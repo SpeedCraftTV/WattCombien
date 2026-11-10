@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="google-adsense-account" content="ca-pub-5689496403962976">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Politique de confidentialité de WattCombien : calculs locaux, enregistrement volontaire, partage par URL et publicité soumise au consentement.">
+  <meta name="description" content="Politique de confidentialité de WattCombien : données des calculateurs, services d’analyse, publicité et formulaire de contact à venir.">
   <title>Politique de confidentialité | WattCombien</title>
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <script type="module" src="../js/seo.js"></script>
   <script type="module" src="../js/adsense.js"></script>
+  <script type="module" src="../js/legal-details.js"></script>
 </head>
 <body data-canonical-path="pages/confidentialite.html">
   <a class="skip-link" href="#main">Aller au contenu</a>
@@ -24,7 +25,7 @@
       <p class="breadcrumbs"><a href="../index.html">Accueil</a> / Confidentialité</p>
       <p class="eyebrow">DONNÉES ET VIE PRIVÉE</p>
       <h1>Politique de confidentialité</h1>
-      <p class="lead">Cette politique décrit le fonctionnement actuel du site statique. Elle devra être révisée si de nouveaux services, formulaires, journaux d’audience ou publicités sont activés.</p>
+      <p class="lead">Cette politique présente les données traitées par les fonctionnalités actuellement disponibles et les services tiers configurés sur le site.</p>
 
       <h2>Calculs et données saisies</h2>
       <p>Les calculs sont effectués dans votre navigateur. Le site ne transmet pas les valeurs du calculateur à un serveur applicatif. La fonction de partage place les paramètres non sensibles dans l’URL. Toute personne à qui vous transmettez ce lien pourra les consulter. N’incluez aucune donnée personnelle ou confidentielle dans les noms d’appareils.</p>
@@ -37,33 +38,47 @@
       <p>La copie des résultats sollicite le presse-papiers après activation du bouton. L’export CSV crée un fichier sur votre appareil. Le partage par URL peut apparaître dans l’historique ou les journaux du navigateur, ou être transmis à des tiers si vous envoyez le lien.</p>
 
       <h2>Publicité Google AdSense et cookies</h2>
-      <p>Le site peut charger Google AdSense après réception d’un signal de consentement valide transmis par une plateforme de gestion du consentement (CMP) compatible avec le cadre de transparence et de consentement IAB Europe. Dans l’Espace économique européen, au Royaume-Uni et en Suisse, une CMP certifiée par Google et configurée selon les exigences applicables doit être installée avant la mise en service des annonces. Sans signal de consentement approprié, le script publicitaire ne se charge pas.</p>
+      <p>Le code de chargement Google AdSense est conditionné à un signal CMP valide. Aucune annonce n’est intégrée manuellement aux pages actuellement. Avant la diffusion d’annonces dans les régions où cela est requis, une CMP conforme aux exigences applicables de Google et du cadre IAB Europe doit être configurée. Sans signal de consentement approprié, le script publicitaire ne se charge pas.</p>
       <p>Après activation, Google et ses partenaires peuvent traiter des données telles que l’adresse IP, les informations sur l’appareil et le navigateur, ainsi que des identifiants stockés dans des cookies ou technologies similaires, afin de diffuser et mesurer les annonces selon les choix exprimés dans la CMP. Le chargeur du site n’active AdSense qu’après consentement aux finalités TCF 1, 3 et 4 et au fournisseur Google. Les finalités publicitaires, la mesure, les durées de conservation, les partenaires et les modalités de retrait doivent être détaillés dans la CMP et dans les informations Google applicables.</p>
-      <p>Vous pouvez modifier ou retirer votre choix à tout moment depuis les réglages de la CMP. Les demandes relatives au traitement par Google peuvent aussi être exercées selon les modalités indiquées par Google. L’éditeur doit compléter ces informations selon la CMP, les annonces réellement diffusées et les traitements configurés dans AdSense.</p>
+      <p>Vous pouvez modifier ou retirer votre choix depuis les réglages de la CMP lorsqu’elle est installée. Les demandes relatives aux traitements de Google peuvent également être adressées selon les modalités indiquées par Google.</p>
 
       <h2>Microsoft Clarity et données d’analyse</h2>
       <p>Le script Microsoft Clarity n’est chargé qu’après un choix CMP indiquant le consentement au stockage sur l’appareil et à la mesure d’audience, soit les finalités TCF 1 et 8. Le site transmet également à Clarity les états de stockage analytique et publicitaire par son API de consentement v2. Le stockage publicitaire Microsoft reste refusé. Si le consentement analytique est refusé ou absent, le script ne se charge pas. Si un consentement précédemment accordé est retiré, le nouvel état refusé est transmis à Clarity. Selon la documentation Microsoft, Clarity peut alors fonctionner en mode sans cookies avec des fonctionnalités limitées.</p>
       <p>Clarity peut enregistrer des interactions avec les pages, les clics, les déplacements du pointeur et des informations techniques de navigation. Consultez les réglages du projet Clarity, notamment le mode Consentement, le masquage des contenus, les durées de conservation et les conditions Microsoft. Les champs de formulaire et les contenus sensibles doivent rester masqués.</p>
 
       <h2>Cloudflare Web Analytics</h2>
-      <p>Le beacon Cloudflare Web Analytics est chargé après un choix CMP autorisant les finalités TCF 1 et 8. En l’absence de choix valide ou en cas de refus, le script ne se charge pas. Il transmet à Cloudflare des mesures d’audience et de performance de navigation, comme les pages consultées, les référents et des indicateurs de performance. Le tableau de bord Cloudflare présente ces données selon les métriques et dimensions offertes par le service. Le token configuré identifie le site suivi.</p>
-      <p>La configuration ne charge qu’un seul beacon manuel. L’injection automatique de Web Analytics dans les paramètres Cloudflare Pages doit rester désactivée. Si vous modifiez le choix après le chargement du beacon, celui-ci ne peut pas être retiré du document déjà ouvert ; le choix refusé empêchera son chargement lors des pages suivantes. Consultez la documentation Cloudflare et les paramètres du service pour connaître les données traitées, leur conservation et les modalités applicables.</p>
+      <p>Le beacon Cloudflare Web Analytics ne se charge qu’après un choix CMP autorisant les finalités TCF 1 et 8. Il peut transmettre à Cloudflare des mesures d’audience et de performance, notamment les pages consultées et des informations sur la navigation. Les bloqueurs de contenu peuvent empêcher ces mesures.</p>
+      <p>Si vous retirez votre choix pendant une visite, le script déjà chargé ne peut pas être supprimé de la page ouverte. Le refus empêchera son chargement lors d’une visite ultérieure.</p>
 
-      <h2>Autres traceurs et hébergement</h2>
-      <p>Aucun autre outil d’analyse tel que Google Analytics n’est installé. L’hébergement Cloudflare Pages peut traiter des données techniques dans ses journaux conformément à ses propres conditions et à la configuration du service. Consultez les informations du fournisseur d’hébergement applicable.</p>
+      <h2>Formulaire de contact</h2>
+      <p>Le formulaire de contact est en préparation et n’envoie actuellement aucune donnée. Tant que l’interface indique qu’il n’est pas disponible, les informations saisies ne sont pas transmises.</p>
+      <p>Après activation, le formulaire sera destiné à recevoir le motif de votre demande et son contenu. L’adresse e-mail est facultative et ne sera utilisée que si une réponse est nécessaire. Le traitement aura pour seule finalité de répondre à la demande. Les messages seront transmis par un service Cloudflare Worker vers une base Supabase privée. Cloudflare Turnstile vérifiera que la soumission est légitime ; le jeton de vérification ne sera pas conservé dans la table des messages. Le Worker utilise temporairement l’adresse IP comme clé de limitation de débit et ne la transmet pas à Turnstile. Les clés serveur ne seront pas exposées dans le navigateur.</p>
+      <p>Le nom du responsable de traitement est indiqué dans les <a href="mentions-legales.html">mentions légales</a>. Base juridique du traitement : <span data-legal-field="contactLegalBasis">non définie à ce jour</span>. Durée de conservation prévue : <span data-legal-field="contactRetentionDays">non définie à ce jour</span>. Ces informations devront être établies avant l’ouverture du formulaire. Les messages ne seront pas utilisés pour envoyer de la publicité.</p>
+      <p>Vous pourrez demander l’accès, la rectification, l’effacement ou la limitation du traitement, ainsi que vous opposer au traitement lorsque ce droit s’applique, en écrivant à <span data-legal-field="privacyEmail">Coordonnées dédiées non communiquées.</span> Vous pouvez également introduire une réclamation auprès de la CNIL. Merci de ne pas transmettre d’informations sensibles ou de documents confidentiels dans le formulaire.</p>
+
+      <h2>Hébergement et données techniques</h2>
+      <p>Le site est publié sur GitHub Pages et sur Cloudflare Pages à l’adresse <code>wattcombien.pages.dev</code>. Le prestataire dépend du domaine consulté. GitHub indique que les visites de sites GitHub Pages entraînent l’enregistrement de l’adresse IP à des fins de sécurité. Cloudflare et les services d’analyse ou de protection peuvent également traiter des données techniques selon leurs paramètres et conditions respectifs.</p>
+      <p>Les services prévus pour le formulaire sont Cloudflare Workers, Turnstile et Supabase. Ils ne traiteront aucune soumission de contact tant que le formulaire et le Worker ne seront pas activés. Selon les services retenus et leurs conditions, des traitements ou transferts hors de l’Espace économique européen peuvent avoir lieu. Les garanties applicables doivent être vérifiées dans les contrats et politiques des prestataires avant l’activation du formulaire.</p>
 
       <h2>Contact et droits</h2>
-      <p>Les coordonnées de l’éditeur et les moyens d’exercer vos droits doivent être complétés dans les <a href="mentions-legales.html">mentions légales</a> avant publication. La page <a href="contact.html">contact</a> indique le canal actuellement disponible.</p>
-      <p><strong>Mise à jour :</strong> 10 novembre 2026. À vérifier et actualiser après la configuration de la CMP, de Clarity, de Cloudflare Web Analytics et des annonces.</p>
+      <p>Pour exercer vos droits ou contacter le responsable du traitement, écrivez à <span data-legal-field="privacyEmail">Coordonnées dédiées non communiquées.</span> La page <a href="contact.html">Contact</a> présentera les moyens disponibles lorsque le formulaire sera activé.</p>
+      <p><strong>Mise à jour :</strong> 10 novembre 2026.</p>
     </article>
   </main>
   <footer class="site-footer">
-    <div class="shell footer-main">
-      <a class="brand" href="../index.html"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
-      <p>Les outils d’analyse dépendent de votre choix CMP.</p>
-      <nav aria-label="Informations"><a href="mentions-legales.html">Mentions légales</a><a href="contact.html">Contact</a></nav>
-    </div>
-    <div class="shell footer-bottom"><span>© WattCombien</span><span>Décrivez les services réellement actifs.</span></div>
-  </footer>
+  <div class="shell footer-main">
+    <a class="brand" href="../index.html"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+    <p>Calculs indicatifs selon les paramètres que vous renseignez.</p>
+    <nav aria-label="Informations">
+      <a href="../pages/mentions-legales.html">Mentions légales</a>
+      <a href="../pages/confidentialite.html">Confidentialité</a>
+      <a href="../pages/contact.html">Contact</a>
+    </nav>
+  </div>
+  <div class="shell footer-bottom">
+    <span>© WattCombien</span>
+    <span>Outil gratuit, sans inscription.</span>
+  </div>
+</footer>
 </body>
 </html>
