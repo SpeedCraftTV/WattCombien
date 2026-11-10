@@ -308,6 +308,14 @@ begin
     raise exception 'anon or authenticated retains effective privileges on contact_messages; review inherited grants before retrying';
   end if;
 
+  if current_setting('server_version_num')::integer >= 170000
+    and (
+      has_table_privilege('anon', table_oid, 'MAINTAIN')
+      or has_table_privilege('authenticated', table_oid, 'MAINTAIN')
+    ) then
+    raise exception 'anon or authenticated retains effective MAINTAIN privilege on contact_messages; review inherited grants before retrying';
+  end if;
+
   if not has_table_privilege('service_role', table_oid, 'insert')
     or has_table_privilege('service_role', table_oid, 'select')
     or has_table_privilege('service_role', table_oid, 'update')
@@ -317,6 +325,11 @@ begin
     or has_table_privilege('service_role', table_oid, 'trigger')
     or not has_schema_privilege('service_role', 'public', 'usage') then
     raise exception 'service_role effective privileges are not limited to INSERT; review ownership and inherited grants before retrying';
+  end if;
+
+  if current_setting('server_version_num')::integer >= 170000
+    and has_table_privilege('service_role', table_oid, 'MAINTAIN') then
+    raise exception 'service_role retains effective MAINTAIN privilege on contact_messages; review inherited grants before retrying';
   end if;
 end;
 $$;

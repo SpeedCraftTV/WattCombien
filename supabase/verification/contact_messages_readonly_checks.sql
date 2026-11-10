@@ -104,7 +104,12 @@ select
   has_table_privilege(role_name, 'public.contact_messages', 'delete') as can_delete,
   has_table_privilege(role_name, 'public.contact_messages', 'truncate') as can_truncate,
   has_table_privilege(role_name, 'public.contact_messages', 'references') as can_reference,
-  has_table_privilege(role_name, 'public.contact_messages', 'trigger') as can_create_trigger
+  has_table_privilege(role_name, 'public.contact_messages', 'trigger') as can_create_trigger,
+  case
+    when current_setting('server_version_num')::integer >= 170000
+      then has_table_privilege(role_name, 'public.contact_messages', 'MAINTAIN')
+    else false
+  end as can_maintain
 from (values ('anon'), ('authenticated'), ('service_role')) as roles(role_name)
 order by role_name;
 
@@ -119,7 +124,12 @@ select
   has_table_privilege(role_record.oid, 'public.contact_messages', 'delete') as can_delete,
   has_table_privilege(role_record.oid, 'public.contact_messages', 'truncate') as can_truncate,
   has_table_privilege(role_record.oid, 'public.contact_messages', 'references') as can_reference,
-  has_table_privilege(role_record.oid, 'public.contact_messages', 'trigger') as can_create_trigger
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'trigger') as can_create_trigger,
+  case
+    when current_setting('server_version_num')::integer >= 170000
+      then has_table_privilege(role_record.oid, 'public.contact_messages', 'MAINTAIN')
+    else false
+  end as can_maintain
 from pg_roles as role_record
 where not role_record.rolsuper
   and role_record.rolname not in ('anon', 'authenticated', 'service_role')
@@ -136,6 +146,10 @@ where not role_record.rolsuper
     or has_table_privilege(role_record.oid, 'public.contact_messages', 'truncate')
     or has_table_privilege(role_record.oid, 'public.contact_messages', 'references')
     or has_table_privilege(role_record.oid, 'public.contact_messages', 'trigger')
+    or (
+      current_setting('server_version_num')::integer >= 170000
+      and has_table_privilege(role_record.oid, 'public.contact_messages', 'MAINTAIN')
+    )
   )
 order by role_record.rolname;
 

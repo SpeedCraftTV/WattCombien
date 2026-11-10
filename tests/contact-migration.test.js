@@ -41,6 +41,13 @@ test("the corrective migration maps legacy statuses and validates the contact sc
   assert.match(migration, /has_table_privilege\('service_role', table_oid, 'insert'\)/i);
   assert.match(migration, /has_table_privilege\('service_role', table_oid, 'select'\)/i);
   assert.match(migration, /has_table_privilege\('anon', table_oid, 'select'\)/i);
+  assert.match(migration, /has_table_privilege\('anon', table_oid, 'maintain'\)/i);
+  assert.match(migration, /has_table_privilege\('authenticated', table_oid, 'maintain'\)/i);
+  assert.match(migration, /has_table_privilege\('service_role', table_oid, 'maintain'\)/i);
+  assert.match(migration, /server_version_num.*170000/is);
+  assert.match(migration, /execute format\([\s\S]*alter table public\.contact_messages drop constraint %i/i);
+  assert.match(migration, /'status=anyarray\[''nouveau'',''en_cours'',''traite''\]'/i);
+  assert.match(migration, /alter table public\.contact_messages add constraint %i %s/i);
   assert.match(migration, /pg_has_role\('service_role', table_owner, 'member'\)/i);
   assert.match(migration, /pg_trigger/i);
   assert.doesNotMatch(migration, /drop table|truncate table|delete from/i);
@@ -55,6 +62,7 @@ test("the read-only Supabase verification file checks schema, constraints, polic
   assert.match(verification, /pg_constraint/i);
   assert.match(verification, /pg_policies/i);
   assert.match(verification, /has_table_privilege/i);
+  assert.match(verification, /can_maintain/i);
   assert.match(verification, /aclexplode/i);
   assert.match(verification, /pg_has_role/i);
   assert.match(verification, /pg_trigger/i);
