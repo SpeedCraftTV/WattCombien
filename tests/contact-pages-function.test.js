@@ -103,6 +103,51 @@ test("the function accepts a 5000 character UTF-8 message", async () => {
   assert.equal(JSON.parse(calls[1].init.body).message.length, 5000);
 });
 
+test("message and email length limits count Unicode code points like PostgreSQL char_length", async () => {
+  const calls = [];
+  const astralMessage = "🙂".repeat(5000);
+  const astralEmail = `${"🙂".repeat(125)}@x.co`;
+  const response = await __test.handleContact(request({
+    ...payload,
+    email: astralEmail,
+    message: astralMessage
+  }), env, successfulFetch(calls));
+
+  assert.equal(response.status, 201);
+  const inserted = JSON.parse(calls[1].init.body);
+  assert.equal(Array.from(inserted.message).length, 5000);
+  assert.equal(Array.from(inserted.email).length, 130);
+  assert.equal(inserted.email, astralEmail);
+
+  const maxEmail = `${"a".repeat(249)}@x.co`;
+  const emailAtLimit = await __test.handleContact(request({
+    ...payload,
+    email: maxEmail
+  }), env, successfulFetch([]));
+  assert.equal(emailAtLimit.status, 201);
+
+  let fetchCalled = false;
+  const tooLong = await __test.handleContact(request({
+    ...payload,
+    message: "🙂".repeat(5001)
+  }), env, async () => {
+    fetchCalled = true;
+    return Response.json({ success: true, hostname: "wattcombien.pages.dev", action: "contact" });
+  });
+  assert.equal(tooLong.status, 400);
+  assert.equal(fetchCalled, false);
+
+  const tooLongEmail = await __test.handleContact(request({
+    ...payload,
+    email: `${"a".repeat(250)}@x.co`
+  }), env, async () => {
+    fetchCalled = true;
+    return Response.json({ success: true, hostname: "wattcombien.pages.dev", action: "contact" });
+  });
+  assert.equal(tooLongEmail.status, 400);
+  assert.equal(fetchCalled, false);
+});
+
 test("the function rejects disallowed origins and refuses submissions when disabled", async () => {
   const forbidden = await __test.handleContact(request(payload, { origin: "https://attacker.example" }), env);
   assert.equal(forbidden.status, 403);

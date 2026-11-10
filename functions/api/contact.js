@@ -74,13 +74,15 @@ function validPayload(payload) {
   if (!ALLOWED_REASONS.has(payload.reason)) return false;
   if (typeof payload.message !== "string") return false;
   const message = payload.message.trim();
-  if (message.length < MIN_MESSAGE_LENGTH || message.length > MAX_MESSAGE_LENGTH) return false;
+  const messageLength = Array.from(message).length;
+  if (messageLength < MIN_MESSAGE_LENGTH || messageLength > MAX_MESSAGE_LENGTH) return false;
   if (typeof payload.turnstileToken !== "string"
     || payload.turnstileToken.length === 0 || payload.turnstileToken.length > 2048) return false;
 
   if (payload.email !== null && payload.email !== undefined) {
-    if (typeof payload.email !== "string" || payload.email.length > 254) return false;
+    if (typeof payload.email !== "string") return false;
     const email = payload.email.trim();
+    if (Array.from(email).length > 254) return false;
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
   }
   return true;

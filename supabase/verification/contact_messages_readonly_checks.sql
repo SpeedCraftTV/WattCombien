@@ -14,6 +14,40 @@ where table_schema = 'public'
   and table_name = 'contact_messages'
 order by ordinal_position;
 
+-- Additional required columns can prevent the Function's INSERT from succeeding.
+select
+  column_name,
+  data_type,
+  column_default,
+  is_identity,
+  is_generated
+from information_schema.columns
+where table_schema = 'public'
+  and table_name = 'contact_messages'
+  and column_name not in ('id', 'reason', 'email', 'message', 'status', 'created_at')
+  and is_nullable = 'NO'
+  and column_default is null
+  and is_identity = 'NO'
+  and is_generated = 'NEVER'
+order by ordinal_position;
+
+-- Aggregate only: this reports compatibility counts without returning message data.
+select
+  count(*) as total_rows,
+  count(*) filter (where status in ('nouveau', 'en_cours', 'traite')) as legacy_status_rows,
+  count(*) filter (
+    where id is null
+       or reason is null
+       or message is null
+       or status is null
+       or created_at is null
+       or reason not in ('question', 'calculation_error', 'privacy_request', 'other')
+       or (email is not null and char_length(email) > 254)
+       or char_length(btrim(message)) not between 10 and 5000
+       or status not in ('new', 'in_progress', 'closed', 'nouveau', 'en_cours', 'traite')
+  ) as invalid_rows_for_migration
+from public.contact_messages;
+
 -- Primary key and validated check constraints.
 select
   conname,
@@ -23,6 +57,18 @@ select
 from pg_constraint
 where conrelid = 'public.contact_messages'::regclass
 order by conname;
+
+-- Enabled user triggers can cause side effects during the intentional status update.
+select
+  trigger_record.tgname,
+  trigger_record.tgenabled,
+  trigger_record.tgisinternal,
+  procedure.proname as trigger_function
+from pg_trigger as trigger_record
+join pg_proc as procedure
+  on procedure.oid = trigger_record.tgfoid
+where trigger_record.tgrelid = 'public.contact_messages'::regclass
+order by trigger_record.tgname;
 
 -- RLS, table owner, and table comment.
 select
@@ -62,6 +108,37 @@ select
 from (values ('anon'), ('authenticated'), ('service_role')) as roles(role_name)
 order by role_name;
 
+-- Any other non-superuser role with effective relation privileges needs explicit review.
+select
+  role_record.rolname,
+  role_record.rolinherit,
+  role_record.rolbypassrls,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'select') as can_select,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'insert') as can_insert,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'update') as can_update,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'delete') as can_delete,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'truncate') as can_truncate,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'references') as can_reference,
+  has_table_privilege(role_record.oid, 'public.contact_messages', 'trigger') as can_create_trigger
+from pg_roles as role_record
+where not role_record.rolsuper
+  and role_record.rolname not in ('anon', 'authenticated', 'service_role')
+  and role_record.oid <> (
+    select relation.relowner
+    from pg_class as relation
+    where relation.oid = 'public.contact_messages'::regclass
+  )
+  and (
+    has_table_privilege(role_record.oid, 'public.contact_messages', 'select')
+    or has_table_privilege(role_record.oid, 'public.contact_messages', 'insert')
+    or has_table_privilege(role_record.oid, 'public.contact_messages', 'update')
+    or has_table_privilege(role_record.oid, 'public.contact_messages', 'delete')
+    or has_table_privilege(role_record.oid, 'public.contact_messages', 'truncate')
+    or has_table_privilege(role_record.oid, 'public.contact_messages', 'references')
+    or has_table_privilege(role_record.oid, 'public.contact_messages', 'trigger')
+  )
+order by role_record.rolname;
+
 -- Direct table ACL entries, including the owner and PUBLIC.
 select
   case
@@ -88,3 +165,14 @@ from pg_roles as role_record
 where role_record.rolname in ('service_role', 'anon', 'authenticated')
    or pg_has_role('service_role', role_record.oid, 'MEMBER')
 order by role_record.rolname;
+
+-- Check whether an API role can assume the table owner's role.
+select
+  owner_role.rolname as table_owner,
+  pg_has_role('anon', owner_role.oid, 'MEMBER') as anon_is_owner_role_member,
+  pg_has_role('authenticated', owner_role.oid, 'MEMBER') as authenticated_is_owner_role_member,
+  pg_has_role('service_role', owner_role.oid, 'MEMBER') as service_role_is_owner_role_member
+from pg_class as relation
+join pg_roles as owner_role
+  on owner_role.oid = relation.relowner
+where relation.oid = 'public.contact_messages'::regclass;
