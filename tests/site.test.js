@@ -103,6 +103,24 @@ test("the contact form stays disabled until its public configuration and legal s
   assert.match(page, /<fieldset id="contact-fields" disabled>/);
 });
 
+test("legal and contact pages publish the selected contact channel without fabricating publisher identity", async () => {
+  const legal = await readFile(path.join(root, "pages", "mentions-legales.html"), "utf8");
+  const privacy = await readFile(path.join(root, "pages", "confidentialite.html"), "utf8");
+  const contact = await readFile(path.join(root, "pages", "contact.html"), "utf8");
+  for (const [file, html] of [["mentions légales", legal], ["confidentialité", privacy], ["contact", contact]]) {
+    assert.match(html, /href="mailto:speedoutv\.pro@gmail\.com"/, `${file} doit offrir l’adresse publique choisie`);
+    const emails = new Set([...html.matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(([email]) => email.toLowerCase()));
+    assert.deepEqual(emails, new Set(["speedoutv.pro@gmail.com"]), `${file} ne doit publier aucune autre adresse e-mail`);
+    assert.doesNotMatch(html, /\btel:/i, `${file} ne doit publier aucun numéro de téléphone`);
+  }
+  assert.match(legal, /article 6, III, 2/);
+  assert.match(legal, /qualification n’est pas confirmée/);
+  assert.match(privacy, /article 13 du RGPD/);
+  assert.match(privacy, /Cloudflare Pages Function/);
+  assert.doesNotMatch(privacy, /Cloudflare Worker/);
+  assert.match(contact, /Le formulaire sécurisé est en préparation et ne transmet actuellement aucune donnée/);
+});
+
 test("the contact database migration denies public access and grants only Pages Function insertion", async () => {
   const migration = await readFile(path.join(root, "supabase", "migrations", "20261110000000_create_contact_messages.sql"), "utf8");
   const worker = await readFile(path.join(root, "functions", "api", "contact.js"), "utf8");

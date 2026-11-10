@@ -101,10 +101,10 @@ Pour voir les premières données, ouvrez **Cloudflare Dashboard → Web Analyti
 
 ## Configuration légale et confidentialité
 
-- Renseignez les variables `legal` de `js/config.js` avec l’identité réelle de l’éditeur, son adresse, les immatriculations applicables, le directeur de publication et les contacts pour les demandes générales et la vie privée.
-- Le dépôt publie le site via GitHub Pages depuis `main`, et l’adresse `wattcombien.pages.dev` est servie par Cloudflare Pages. Les mentions légales nomment les deux prestataires, car le fournisseur dépend de l’URL effectivement visitée. Si une URL n’est plus publiée, retirez le prestataire correspondant après vérification.
-- La politique de confidentialité couvre les calculs locaux, le stockage volontaire, les outils d’analyse et le futur formulaire. Sa base juridique et sa durée de conservation sont à renseigner avant d’activer ce dernier.
-- Aucun faux bandeau ni CMP fictive n’est fourni. Clarity, Cloudflare Web Analytics et AdSense restent inactifs tant qu’une CMP compatible n’est pas configurée et qu’un signal de consentement approprié n’est pas reçu.
+- L’adresse publique de contact et d’exercice des droits est `speedoutv.pro@gmail.com`. Les pages juridiques présentent WattCombien comme nom public et indiquent que le statut non professionnel n’est pas juridiquement confirmé.
+- `wattcombien.pages.dev` et sa Pages Function sont servis par Cloudflare Pages. Le workflow du dépôt publie aussi une version distincte via GitHub Pages à `speedcrafttv.github.io/WattCombien`; les mentions légales identifient le prestataire correspondant à chaque URL.
+- L’exception d’anonymat de l’article 6, III, 2 de la LCEN ne peut être retenue qu’après vérification du statut non professionnel au vu de l’activité réelle, y compris le projet de monétisation, et après communication confidentielle des informations personnelles requises à l’hébergeur. Les mentions publiques ne remplacent pas cette démarche. L’identité requise du responsable au titre de l’article 13 du RGPD reste à vérifier avant toute collecte de données personnelles.
+- Le formulaire reste désactivé, sa base juridique et sa durée de conservation n’étant pas définies. Aucun bandeau ou CMP n’est fourni dans le dépôt. Les modules AdSense, Clarity et Cloudflare Analytics attendent un signal CMP, mais toute injection automatique Cloudflare doit aussi être vérifiée dans le tableau de bord avant activation.
 
 ## Formulaire de contact, Supabase et Cloudflare Pages Functions
 
