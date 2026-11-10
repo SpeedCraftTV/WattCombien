@@ -40,6 +40,18 @@ test("les textes HTML et les chaînes de l’interface ne contiennent pas de tir
   }
 });
 
+test("chaque page publique charge une seule fois le garde CMP AdSense et aucune balise publicitaire sans consentement", async () => {
+  for (const file of await htmlFiles()) {
+    const html = await readFile(file, "utf8");
+    const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)].map((match) => match[1]);
+    assert.equal(scripts.filter((src) => src.endsWith("/adsense.js")).length, 1, `${path.relative(root, file)} doit charger une fois le garde AdSense`);
+    assert.equal(scripts.filter((src) => src.includes("adsbygoogle.js")).length, 0, `${path.relative(root, file)} ne doit pas charger AdSense avant le consentement`);
+  }
+
+  const adsTxt = await readFile(path.join(root, "ads.txt"), "utf8");
+  assert.equal(adsTxt.trim(), "google.com, pub-5689496403962976, DIRECT, f08c47fec0942fa0");
+});
+
 test("tous les liens et ressources locaux existent et les fragments sont valides", async () => {
   const files = await htmlFiles();
   const checks = [];

@@ -1,10 +1,10 @@
 export const config = {
   siteName: "WattCombien",
   // Change this base if the site is published on a custom domain.
-  siteUrl: "https://speedcrafttv.github.io/WattCombien",
+  siteUrl: "https://wattcombien.pages.dev",
   adsense: {
-    enabled: false,
-    publisherId: "",
+    enabled: true,
+    publisherId: "ca-pub-5689496403962976",
     slots: {}
   }
 };

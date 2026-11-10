@@ -10,7 +10,7 @@ Site statique francophone pour estimer et comparer la consommation électrique d
 - Neuf simulateurs dédiés et six guides éditoriaux.
 - Pages Mentions légales, Confidentialité et Contact à relire et compléter avant lancement.
 - Sitemap et robots.txt à personnaliser avec l’URL publique.
-- Publicité désactivée. Aucun script AdSense, tracker, CMP ou font externe n’est chargé.
+- AdSense est configuré, mais son script tiers ne se charge qu’après un signal CMP TCF valide. Aucun outil d’analyse ni font externe n’est chargé.
 
 ## Hypothèses et calculs
 
@@ -51,7 +51,7 @@ Les tests vérifient les conversions et validations principales, l’unicité de
 3. Dans **Build and deployment → Source**, sélectionnez **GitHub Actions**, puis enregistrez.
 4. Poussez les changements sur `main`. Dans **Actions**, vérifiez que les jobs `build` et `deploy` réussissent. Testez ensuite l’adresse Pages sur ordinateur et mobile, ainsi que chaque simulateur.
 5. Pour un dépôt projet, l’URL publique comprend le chemin du dépôt, par exemple `https://UTILISATEUR.github.io/NOM-DU-DEPOT/`. Pour un dépôt utilisateur ou un domaine personnalisé, elle est généralement à la racine du domaine.
-6. La configuration initiale pointe vers `https://speedcrafttv.github.io/WattCombien`. Si vous publiez sous une autre adresse, remplacez `siteUrl` dans `js/config.js` par la **base publique sans slash final**. Pour un dépôt projet, conservez le chemin `/NOM-DU-DEPOT`. La balise canonical est générée sur chaque page à partir de cette base.
+6. La configuration initiale pointe vers `https://wattcombien.pages.dev`. Si vous publiez sous une autre adresse, remplacez `siteUrl` dans `js/config.js` par la **base publique sans slash final**. Pour un dépôt projet, conservez le chemin `/NOM-DU-DEPOT`. La balise canonical est générée sur chaque page à partir de cette base.
 7. Si vous changez de domaine, mettez aussi à jour toutes les URLs de `sitemap.xml` et la directive `Sitemap:` de `robots.txt` avec cette même base. Vérifiez que chaque URL retourne bien la bonne page.
 
 ### Déploiement par workflow GitHub Actions
@@ -71,6 +71,16 @@ Si un déploiement échoue, ouvrez **Actions → le workflow “Deploy static si
 
 Les règles et adresses IP de GitHub Pages peuvent évoluer : vérifiez la documentation officielle GitHub et Cloudflare au moment de la configuration.
 
+### Cloudflare Pages
+
+Le dépôt est un site statique sans compilation. Dans **Cloudflare Dashboard → Workers & Pages → Create application → Pages → Connect to Git**, sélectionnez le dépôt et la branche à publier. Choisissez un préréglage **None** ou équivalent, laissez la commande de build vide et définissez le répertoire de sortie sur la racine du dépôt (`.`). Après le premier déploiement, vérifiez `https://wattcombien.pages.dev/ads.txt` et une page de simulateur. Le workflow `.github/workflows/deploy.yml` est destiné à GitHub Pages et n’est pas requis pour le déploiement Cloudflare Pages.
+
+## Google AdSense et consentement
+
+L’identifiant éditeur fourni est configuré dans `js/config.js` et `ads.txt`. Chaque page charge le petit module local `js/adsense.js`, mais celui-ci ne contacte pas Google en l’absence d’une CMP qui expose l’API IAB TCF 2.2. Dans les territoires concernés, le script publicitaire est ajouté seulement après un signal autorisant les finalités TCF 1, 3 et 4 ainsi que le fournisseur Google. Aucun bloc publicitaire manuel n’est ajouté.
+
+Avant de mettre les annonces en service, configurez dans Cloudflare Pages une CMP certifiée par Google et compatible avec les exigences Google et IAB TCF applicables en France et dans l’EEE, au Royaume-Uni et en Suisse. Installez son script avant le chargeur AdSense afin que `__tcfapi` soit disponible. Configurez les choix de l’utilisateur, le retrait du consentement et les informations sur les partenaires et cookies. Testez le refus, l’acceptation et le retrait dans les navigateurs concernés. Sans cette CMP ou sans signal conforme, le script AdSense reste inactif. La configuration technique ne garantit pas l’approbation du site par Google.
+
 ## Search Console et sitemap
 
 1. Vérifiez la propriété de domaine ou l’URL préfixe dans Google Search Console en suivant l’option de vérification proposée.
@@ -81,14 +91,12 @@ Les règles et adresses IP de GitHub Pages peuvent évoluer : vérifiez la docum
 
 - Complétez les champs entre crochets de `pages/mentions-legales.html` avec les informations réelles de l’éditeur et vérifiez les obligations applicables avant publication.
 - La page Contact pointe vers les issues du dépôt GitHub. Vérifiez que ce dépôt est public et les issues activées, ou remplacez le lien par un canal de contact réel. Ne publiez pas une adresse inventée.
-- La politique de confidentialité décrit le fonctionnement actuel : calcul dans le navigateur, stockage local après action, partage des valeurs via URL et absence actuelle de traceurs tiers. Révisez-la si l’hébergeur, les formulaires ou les scripts changent.
-- Aucun tracker facultatif ne se charge dans la version actuelle. Aucune CMP ou bannière fictive n’est installée.
+- La politique de confidentialité décrit les calculs locaux, l’enregistrement volontaire, le partage par URL et le chargement publicitaire conditionné par la CMP.
+- Aucun outil d’analyse facultatif n’est installé. Aucune CMP fictive n’est fournie. AdSense reste inactif tant qu’une véritable CMP compatible n’est pas configurée.
 
-## AdSense (désactivé par défaut)
+## AdSense
 
-`js/config.js` centralise `adsense.enabled`, l’identifiant éditeur et les emplacements. Ils restent vides et `enabled` est `false` ; aucun script AdSense ni espace publicitaire factice n’est injecté. `ads.txt` ne contient qu’un rappel sans identifiant inventé.
-
-Avant toute activation : obtenir l’approbation du site, renseigner l’identifiant attribué réellement par Google dans `js/config.js`, compléter `ads.txt` exactement selon les instructions AdSense, mettre en place une CMP adaptée aux exigences Google et aux règles applicables en France/EEE, expliquer les traitements dans la politique de confidentialité, et vérifier que les annonces restent séparées des commandes du calculateur. L’intégration du script publicitaire est volontairement à effectuer après ces étapes et sans charger de publicité personnalisée avant le consentement requis. Ne changez pas simplement le booléen sans intégrer et tester le dispositif complet.
+La configuration centrale est dans `js/config.js`. L’identifiant `ca-pub-5689496403962976` et la ligne `ads.txt` ont été ajoutés comme fournis. Le module partagé retarde l’insertion du script Google jusqu’au signal CMP décrit ci-dessus. Il n’y a pas de blocs publicitaires manuels ni de garantie d’acceptation par Google.
 
 ## Arborescence
 
@@ -102,6 +110,7 @@ pages/
   contact.html
 css/styles.css
 js/             (calculs, interface, SEO, configuration, simulateurs)
+                (chargeur AdSense soumis au consentement CMP)
 assets/favicon.svg
 tests/          (tests Node intégrés, sans dépendances)
 package.json    (type de modules et commande npm test)
