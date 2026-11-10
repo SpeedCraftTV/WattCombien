@@ -99,7 +99,9 @@ test("the contact form stays disabled until its public configuration and legal s
   assert.match(loader, /config\.contact\.enabled/);
   assert.match(loader, /config\.legal\.contactRetentionDays/);
   assert.match(loader, /https:\/\/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/);
-  assert.match(page, /Le formulaire n’est pas encore ouvert/);
+  assert.match(loader, /form\.checkValidity\(\)/);
+  assert.match(loader, /turnstileToken = token/);
+  assert.match(page, /Le formulaire reste désactivé tant que la configuration des services/);
   assert.match(page, /<fieldset id="contact-fields" disabled>/);
 });
 
@@ -131,8 +133,17 @@ test("the contact database migration denies public access and grants only Pages 
   assert.match(worker, /siteverify/);
   assert.match(worker, /SUPABASE_SECRET_KEY/);
   assert.match(worker, /return=minimal/);
+  assert.match(worker, /secretKey\.startsWith\("eyJ"\)/);
+  assert.match(worker, /rest\\\/v1\\\/\?\\?\$/);
   assert.match(worker, /export async function onRequest/);
   assert.match(worker, /env\.TURNSTILE_SECRET/);
+});
+
+test("contact messages use created_at while the migration preserves existing timestamps", async () => {
+  const schema = await readFile(path.join(root, "supabase", "migrations", "20261110000000_create_contact_messages.sql"), "utf8");
+  const migration = await readFile(path.join(root, "supabase", "migrations", "20261110220000_rename_contact_received_at_to_created_at.sql"), "utf8");
+  assert.match(schema, /received_at timestamptz not null default now\(\)/i);
+  assert.match(migration, /rename column received_at to created_at/i);
 });
 
 test("every page uses the same visitor-facing footer", async () => {

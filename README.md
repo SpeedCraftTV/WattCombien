@@ -113,7 +113,7 @@ Le formulaire de `pages/contact.html` est désactivé par défaut. Il ne transme
 ### 1. Créer et sécuriser la table Supabase
 
 1. Créez un projet Supabase et ouvrez **SQL Editor → New query**.
-2. Exécutez le fichier `supabase/migrations/20261110000000_create_contact_messages.sql`.
+2. Exécutez les migrations SQL dans l’ordre : `supabase/migrations/20261110000000_create_contact_messages.sql`, puis `supabase/migrations/20261110220000_rename_contact_received_at_to_created_at.sql`. La seconde migre sans perte les installations qui ont déjà la colonne `received_at` vers `created_at`.
 3. Vérifiez dans **Table Editor** que `contact_messages` a RLS activé et qu’aucune politique n’accorde de lecture ou d’écriture aux rôles `anon` ou `authenticated`. La migration retire leurs privilèges SQL et n’accorde à `service_role` que l’insertion. Les administrateurs peuvent consulter les messages dans le tableau de bord Supabase.
 4. Copiez l’URL de base du projet, par exemple `https://PROJECT_REF.supabase.co`, sans ajouter `/rest/v1`. Créez ou récupérez une clé `secret` Supabase et gardez-la uniquement dans les secrets Cloudflare Pages. Ne la placez jamais dans `js/config.js`, dans une page HTML ou dans une variable publique.
 
@@ -130,15 +130,15 @@ Dans **Cloudflare Dashboard → Workers & Pages → WattCombien → Settings →
 | Nom | Type | Valeur |
 | --- | --- | --- |
 | `CONTACT_ENABLED` | Variable | `false` pendant la configuration, `true` uniquement après les essais |
-| `SUPABASE_URL` | Variable | URL de base HTTPS du projet, sans `/rest/v1` |
+| `SUPABASE_URL` | Variable | URL HTTPS du projet, avec ou sans suffixe `/rest/v1` |
 | `TURNSTILE_EXPECTED_HOSTNAMES` | Variable | Hostnames exacts autorisés, séparés par des virgules |
-| `ALLOWED_ORIGINS` | Variable | Origines HTTPS exactes autorisées, séparées par des virgules |
+| `ALLOWED_ORIGINS` | Variable | Origines HTTPS supplémentaires exactes, séparées par des virgules. L’origine HTTPS identique à l’URL reçue par la Function est acceptée automatiquement. |
 | `TURNSTILE_SECRET` | Secret | Secret Turnstile, jamais dans le dépôt |
 | `SUPABASE_SECRET_KEY` | Secret | Clé secrète Supabase, jamais dans le dépôt |
 
 4. Dans les réglages de build du projet Pages, utilisez la racine du dépôt comme répertoire de sortie (`.`), une commande de build vide et une version du système de build qui prend en charge les Functions. Si le projet utilise une autre méthode de déploiement, assurez-vous que le dossier `functions` est inclus à la racine du répertoire publié.
 
-5. Pour limiter les abus, créez dans Cloudflare une règle WAF de limitation de débit ciblant `POST /api/contact`, par exemple cinq requêtes par minute par adresse IP. La disponibilité des règles dépend du plan Cloudflare. La Function respecte aussi une liaison `CONTACT_LIMITER` si vous en configurez une dans le projet.
+5. Pour limiter les abus, créez et vérifiez dans Cloudflare une règle WAF de limitation de débit ciblant `POST /api/contact`, par exemple cinq requêtes par minute par adresse IP. La Function respecte aussi une liaison `CONTACT_LIMITER` si vous en configurez une dans le projet. Si aucun de ces deux mécanismes n’est actif, n’activez pas le formulaire.
 
 6. Déclenchez un nouveau déploiement Pages après l’ajout des variables et secrets afin qu’ils soient disponibles à la Function.
 
@@ -146,13 +146,13 @@ Dans **Cloudflare Dashboard → Workers & Pages → WattCombien → Settings →
 
 Dans `js/config.js`, `contact.turnstileSiteKey` contient déjà la Site Key fournie et `contact.apiUrl` vaut `/api/contact`. Pour le domaine Cloudflare Pages, conservez cette URL relative. Si le site est également servi sur GitHub Pages, configurez pour cette version une URL HTTPS complète pointant vers `https://wattcombien.pages.dev/api/contact`, et ajoutez `https://speedcrafttv.github.io` à `ALLOWED_ORIGINS`. Renseignez également `legal.contactRetentionDays`, `legal.contactLegalBasis`, `legal.privacyEmail` et les informations éditeur. Le formulaire ne s’active que lorsque les champs exigés sont renseignés et que `contact.enabled` passe à `true`.
 
-`SUPABASE_URL` doit rester une URL de base comme `https://PROJECT_REF.supabase.co`; la Function ajoute elle-même `/rest/v1/contact_messages` une seule fois. La clé `SUPABASE_SECRET_KEY` est envoyée au Data API uniquement par la Function. N’activez pas la Function tant que vous n’avez pas vérifié que cette clé a les droits nécessaires pour insérer dans la table et qu’aucun rôle public ne peut lire les messages.
+`SUPABASE_URL` peut être l’URL de base comme `https://PROJECT_REF.supabase.co`, ou la même URL terminant par `/rest/v1`. La Function accepte les deux formats et construit `/rest/v1/contact_messages` une seule fois. La clé secrète Supabase récente est envoyée dans l’en-tête `apikey` côté serveur. Pour une ancienne clé JWT `service_role`, la Function ajoute aussi l’en-tête `Authorization: Bearer`. N’activez pas la Function tant que vous n’avez pas vérifié que cette clé a les droits nécessaires pour insérer dans la table et qu’aucun rôle public ne peut lire les messages. La date de création est définie par défaut en base, le code ne dépend donc pas du nom de la colonne dans sa requête d’insertion.
 
 Configurez une tâche de suppression périodique dans Supabase selon la durée publiée, par exemple :
 
 ```sql
 delete from public.contact_messages
-where received_at < now() - make_interval(days => 90);
+where created_at < now() - make_interval(days => 90);
 ```
 
 Remplacez `90` par la durée que vous aurez réellement choisie et publiée. Cette requête d’exemple n’est pas planifiée automatiquement par la migration. Définissez aussi qui peut accéder aux messages et comment les demandes d’effacement seront traitées. La Function ne stocke pas l’adresse IP dans la table et ne la transmet pas à Turnstile.

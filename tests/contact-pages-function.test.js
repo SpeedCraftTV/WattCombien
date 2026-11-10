@@ -63,12 +63,36 @@ test("the Pages Function verifies Turnstile before inserting only the submitted 
   });
 });
 
+test("legacy Supabase service role JWTs are sent as the authorization bearer token", async () => {
+  const legacyKey = "eyJservice-role-legacy-key";
+  const calls = [];
+  const response = await __test.handleContact(request(payload), {
+    ...env,
+    SUPABASE_SECRET_KEY: legacyKey
+  }, successfulFetch(calls));
+  assert.equal(response.status, 201);
+  assert.equal(calls[1].init.headers.apikey, legacyKey);
+  assert.equal(calls[1].init.headers.Authorization, `Bearer ${legacyKey}`);
+});
+
 test("the function validates the Supabase base URL and rejects duplicated REST paths", () => {
   assert.equal(__test.validSupabaseUrl("https://example.supabase.co"), true);
   assert.equal(__test.validSupabaseUrl("https://example.supabase.co/"), true);
-  assert.equal(__test.validSupabaseUrl("https://example.supabase.co/rest/v1"), false);
+  assert.equal(__test.validSupabaseUrl("https://example.supabase.co/rest/v1"), true);
+  assert.equal(__test.validSupabaseUrl("https://example.supabase.co/rest/v1/"), true);
   assert.equal(__test.validSupabaseUrl("http://example.supabase.co"), false);
   assert.equal(__test.validSupabaseUrl("https://example.invalid"), false);
+  assert.equal(__test.validSupabaseUrl("https://example.supabase.co/rest/v1/contact_messages"), false);
+});
+
+test("the function builds one REST path when SUPABASE_URL already ends in /rest/v1", async () => {
+  const calls = [];
+  const response = await __test.handleContact(request(payload), {
+    ...env,
+    SUPABASE_URL: "https://example.supabase.co/rest/v1/"
+  }, successfulFetch(calls));
+  assert.equal(response.status, 201);
+  assert.equal(calls[1].url, "https://example.supabase.co/rest/v1/contact_messages");
 });
 
 test("the function accepts a 5000 character UTF-8 message", async () => {
@@ -90,6 +114,9 @@ test("the function rejects disallowed origins and refuses submissions when disab
 test("invalid payloads, rate-limited requests, and failed challenges never reach Supabase", async () => {
   assert.equal((await __test.handleContact(request({ ...payload, reason: "unknown" }), env)).status, 400);
   assert.equal((await __test.handleContact(request({ ...payload, email: "bad-email" }), env)).status, 400);
+  assert.equal((await __test.handleContact(request({ ...payload, message: "  " }), env)).status, 400);
+  assert.equal((await __test.handleContact(request({ ...payload, turnstileToken: "" }), env)).status, 400);
+  assert.equal((await __test.handleContact(request({ ...payload, turnstileToken: undefined }), env)).status, 400);
 
   let inserted = false;
   const badChallenge = await __test.handleContact(request(payload), env, async (url) => {
@@ -107,6 +134,27 @@ test("invalid payloads, rate-limited requests, and failed challenges never reach
     CONTACT_LIMITER: { limit: async () => ({ success: false }) }
   }, successfulFetch([]));
   assert.equal(limited.status, 429);
+});
+
+test("the function allows a blank optional email and keeps the message as plain text", async () => {
+  const calls = [];
+  const plainText = "<script>alert(1)</script> ceci reste du texte";
+  const response = await __test.handleContact(request({
+    ...payload,
+    email: " ",
+    message: plainText
+  }), env, successfulFetch(calls));
+  assert.equal(response.status, 201);
+  assert.equal(JSON.parse(calls[1].init.body).email, null);
+  assert.equal(JSON.parse(calls[1].init.body).message, plainText);
+});
+
+test("same-origin Pages requests are allowed while other origins remain rejected", async () => {
+  const response = await __test.handleContact(request(payload), {
+    ...env,
+    ALLOWED_ORIGINS: ""
+  }, successfulFetch([]));
+  assert.equal(response.status, 201);
 });
 
 test("the hostname and action from Turnstile must match the configured widget", async () => {

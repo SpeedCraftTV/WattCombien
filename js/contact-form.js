@@ -20,11 +20,16 @@ if (form && availability) {
   let widgetId;
   let turnstileLoading = false;
   let submitting = false;
+  let turnstileToken = "";
 
   function setResult(message, state = "") {
     result.textContent = message;
     if (state) result.dataset.state = state;
     else delete result.dataset.state;
+  }
+
+  function updateSubmitState() {
+    submitButton.disabled = submitting || !form.checkValidity() || !turnstileToken;
   }
 
   if (!ready) {
@@ -33,20 +38,24 @@ if (form && availability) {
     intro.textContent = "Utilisez ce formulaire pour nous envoyer votre demande.";
     availability.textContent = "Le formulaire est prêt. Les informations envoyées seront utilisées uniquement pour traiter votre demande.";
     fieldset.disabled = false;
-    submitButton.disabled = true;
 
     function renderTurnstile() {
       try {
         widgetId = window.turnstile.render(widget, {
           sitekey: config.contact.turnstileSiteKey,
           action: "contact",
-          callback: () => { submitButton.disabled = false; },
+          callback: (token) => {
+            turnstileToken = token;
+            updateSubmitState();
+          },
           "expired-callback": () => {
-            submitButton.disabled = true;
+            turnstileToken = "";
+            updateSubmitState();
             setResult("La vérification a expiré. Veuillez la renouveler.");
           },
           "error-callback": () => {
-            submitButton.disabled = true;
+            turnstileToken = "";
+            updateSubmitState();
             setResult("La vérification anti-robot est momentanément indisponible. Réessayez plus tard.", "error");
           }
         });
@@ -57,8 +66,12 @@ if (form && availability) {
       }
     }
 
-    fieldset.addEventListener("focusin", () => {
-      if (turnstileLoading || window.turnstile) return;
+    function loadTurnstile() {
+      if (window.turnstile) {
+        renderTurnstile();
+        return;
+      }
+      if (turnstileLoading) return;
       turnstileLoading = true;
       const turnstileScript = document.createElement("script");
       turnstileScript.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
@@ -71,21 +84,28 @@ if (form && availability) {
         setResult("Impossible de charger la vérification anti-robot. Réessayez plus tard.", "error");
       };
       document.head.append(turnstileScript);
-    }, { once: true });
+    }
+
+    form.addEventListener("input", updateSubmitState);
+    form.addEventListener("change", updateSubmitState);
+    updateSubmitState();
+    loadTurnstile();
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       if (submitting) return;
       if (!form.reportValidity() || widgetId === undefined) return;
 
-      const token = window.turnstile.getResponse(widgetId);
+      const token = turnstileToken && window.turnstile.getResponse(widgetId);
       if (!token) {
+        turnstileToken = "";
+        updateSubmitState();
         setResult("Veuillez terminer la vérification anti-robot.", "error");
         return;
       }
 
       submitting = true;
-      submitButton.disabled = true;
+      updateSubmitState();
       setResult("Envoi en cours…");
       const formData = new FormData(form);
       const payload = {
@@ -121,8 +141,9 @@ if (form && availability) {
           : error.message, "error");
       } finally {
         window.turnstile.reset(widgetId);
+        turnstileToken = "";
         submitting = false;
-        submitButton.disabled = true;
+        updateSubmitState();
       }
     });
   }

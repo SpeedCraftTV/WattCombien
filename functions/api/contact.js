@@ -17,11 +17,17 @@ function jsonResponse(body, status, origin) {
   return new Response(JSON.stringify(body), { status, headers });
 }
 
-function allowedOrigins(env) {
-  return (env.ALLOWED_ORIGINS ?? "")
+function allowedOrigins(env, requestUrl) {
+  const configuredOrigins = (env.ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const requestOrigin = new URL(requestUrl).origin;
+  const requestProtocol = new URL(requestUrl).protocol;
+  const localDevelopment = new URL(requestUrl).hostname === "localhost"
+    || new URL(requestUrl).hostname === "127.0.0.1";
+  if (requestProtocol === "https:" || localDevelopment) configuredOrigins.push(requestOrigin);
+  return [...new Set(configuredOrigins)];
 }
 
 function expectedHostnames(env) {
@@ -72,9 +78,10 @@ function validPayload(payload) {
   if (typeof payload.turnstileToken !== "string"
     || payload.turnstileToken.length === 0 || payload.turnstileToken.length > 2048) return false;
 
-  if (payload.email !== null && payload.email !== undefined && payload.email !== "") {
+  if (payload.email !== null && payload.email !== undefined) {
     if (typeof payload.email !== "string" || payload.email.length > 254) return false;
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email.trim())) return false;
+    const email = payload.email.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
   }
   return true;
 }
@@ -87,7 +94,7 @@ function validSupabaseUrl(value) {
       && !url.username
       && !url.password
       && !url.port
-      && (url.pathname === "/" || url.pathname === "")
+      && (url.pathname === "/" || url.pathname === "" || /^\/rest\/v1\/?$/.test(url.pathname))
       && !url.search
       && !url.hash;
   } catch {
@@ -100,13 +107,12 @@ function configured(env) {
     && Boolean(env.TURNSTILE_SECRET)
     && expectedHostnames(env).length > 0
     && validSupabaseUrl(env.SUPABASE_URL)
-    && Boolean(env.SUPABASE_SECRET_KEY)
-    && allowedOrigins(env).length > 0;
+    && Boolean(env.SUPABASE_SECRET_KEY);
 }
 
 async function handleContact(request, env, fetchImpl = fetch) {
   const origin = request.headers.get("Origin");
-  const origins = allowedOrigins(env);
+  const origins = allowedOrigins(env, request.url);
   const corsOrigin = origin && origins.includes(origin) ? origin : null;
 
   if (request.method === "OPTIONS") {
@@ -173,13 +179,16 @@ async function handleContact(request, env, fetchImpl = fetch) {
 
   try {
     const supabaseUrl = new URL("/rest/v1/contact_messages", env.SUPABASE_URL);
+    const secretKey = env.SUPABASE_SECRET_KEY;
+    const headers = {
+      apikey: secretKey,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal"
+    };
+    if (secretKey.startsWith("eyJ")) headers.Authorization = `Bearer ${secretKey}`;
     const insertion = await fetchImpl(supabaseUrl, {
       method: "POST",
-      headers: {
-        apikey: env.SUPABASE_SECRET_KEY,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal"
-      },
+      headers,
       body: JSON.stringify({
         reason: payload.reason,
         email: typeof payload.email === "string" && payload.email.trim() ? payload.email.trim() : null,
@@ -200,7 +209,7 @@ export async function onRequest(context) {
     return await handleContact(context.request, context.env);
   } catch {
     const origin = context.request.headers.get("Origin");
-    const allowed = allowedOrigins(context.env);
+    const allowed = allowedOrigins(context.env, context.request.url);
     return jsonResponse({ error: "service_unavailable" }, 503, origin && allowed.includes(origin) ? origin : null);
   }
 }
