@@ -44,13 +44,26 @@ test("chaque page publique charge une seule fois le garde CMP et aucun script ti
   for (const file of await htmlFiles()) {
     const html = await readFile(file, "utf8");
     const scripts = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/gi)].map((match) => match[1]);
+    const adsenseMeta = [...html.matchAll(/<meta\s+name="google-adsense-account"\s+content="([^"]+)"/gi)];
+    assert.equal(adsenseMeta.length, 1, `${path.relative(root, file)} doit avoir une unique balise Meta AdSense`);
+    assert.equal(adsenseMeta[0][1], "ca-pub-5689496403962976", `${path.relative(root, file)} doit utiliser le bon identifiant AdSense`);
     assert.equal(scripts.filter((src) => src.endsWith("/adsense.js")).length, 1, `${path.relative(root, file)} doit charger une fois le garde AdSense`);
     assert.equal(scripts.filter((src) => src.includes("adsbygoogle.js")).length, 0, `${path.relative(root, file)} ne doit pas charger AdSense avant le consentement`);
     assert.equal(scripts.filter((src) => src.includes("clarity.ms/tag")).length, 0, `${path.relative(root, file)} ne doit pas charger Clarity avant le consentement`);
+    assert.doesNotMatch(html, /<script\b[^>]*src="https:\/\/pagead\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js\?client=ca-pub-5689496403962976"/i, `${path.relative(root, file)} ne doit pas contenir l’ancien script AdSense statique`);
   }
 
   const adsTxt = await readFile(path.join(root, "ads.txt"), "utf8");
   assert.equal(adsTxt.trim(), "google.com, pub-5689496403962976, DIRECT, f08c47fec0942fa0");
+});
+
+test("AdSense remains configurable for future ads without loading before consent", async () => {
+  const config = await readFile(path.join(root, "js", "config.js"), "utf8");
+  const loader = await readFile(path.join(root, "js", "adsense.js"), "utf8");
+  assert.match(config, /enabled:\s*true/);
+  assert.match(config, /publisherId:\s*"ca-pub-5689496403962976"/);
+  assert.match(loader, /grantsAdsConsent\(tcData\)/);
+  assert.match(loader, /adsbygoogle\.js\?client=\$\{encodeURIComponent\(config\.adsense\.publisherId\)\}/);
 });
 
 test("Clarity uses the configured project ID and loads asynchronously only from the CMP loader", async () => {
