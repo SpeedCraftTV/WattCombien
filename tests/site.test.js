@@ -63,6 +63,19 @@ test("Clarity uses the configured project ID and loads asynchronously only from 
   assert.match(loader, /ad_Storage:\s*"denied"/);
 });
 
+test("Cloudflare Web Analytics uses its configured token and loads once after CMP consent", async () => {
+  const config = await readFile(path.join(root, "js", "config.js"), "utf8");
+  const loader = await readFile(path.join(root, "js", "cloudflare-analytics.js"), "utf8");
+  const entry = await readFile(path.join(root, "js", "adsense.js"), "utf8");
+  assert.match(config, /token:\s*"f53bdf1fc5cd4b86925ed77fcefbf8a3"/);
+  assert.match(loader, /https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js/);
+  assert.match(loader, /script\.type\s*=\s*"module"/);
+  assert.match(loader, /script\.dataset\.cfBeacon\s*=\s*JSON\.stringify\(\{\s*token:\s*config\.cloudflareAnalytics\.token\s*\}\)/);
+  assert.match(loader, /grantsWebAnalyticsConsent\(tcData\)/);
+  assert.match(loader, /document\.getElementById\(SCRIPT_ID\)/);
+  assert.match(entry, /import "\.\/cloudflare-analytics\.js"/);
+});
+
 test("tous les liens et ressources locaux existent et les fragments sont valides", async () => {
   const files = await htmlFiles();
   const checks = [];

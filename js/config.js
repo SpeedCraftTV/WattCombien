@@ -10,5 +10,9 @@ export const config = {
   clarity: {
     enabled: true,
     projectId: "zbctlkmftd"
+  },
+  cloudflareAnalytics: {
+    enabled: true,
+    token: "f53bdf1fc5cd4b86925ed77fcefbf8a3"
   }
 };

@@ -1,6 +1,7 @@
 import { config } from "./config.js";
 import { grantsAdsConsent, subscribeToTcfConsent } from "./consent.js";
 import "./clarity.js";
+import "./cloudflare-analytics.js";
 const SCRIPT_ID = "wattcombien-adsense-script";
 
 function loadAdSense() {

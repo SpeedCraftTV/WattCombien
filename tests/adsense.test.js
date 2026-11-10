@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { grantsAdsConsent, grantsClarityAnalyticsConsent, subscribeToTcfConsent } from "../js/consent.js";
+import {
+  grantsAdsConsent,
+  grantsClarityAnalyticsConsent,
+  grantsWebAnalyticsConsent,
+  subscribeToTcfConsent
+} from "../js/consent.js";
 
 const grantedConsent = {
   eventStatus: "useractioncomplete",
@@ -39,6 +44,20 @@ test("Clarity requires completed consent to device storage and analytics measure
     gdprApplies: false,
     purpose: { consents: { 1: true, 8: false } }
   }), false);
+});
+
+test("Cloudflare Web Analytics requires a completed choice and analytics consent", () => {
+  const consent = {
+    eventStatus: "useractioncomplete",
+    purpose: { consents: { 1: true, 8: true } }
+  };
+  assert.equal(grantsWebAnalyticsConsent(consent), true);
+  assert.equal(grantsWebAnalyticsConsent({ ...consent, eventStatus: "cmpuishown" }), false);
+  assert.equal(grantsWebAnalyticsConsent({
+    ...consent,
+    purpose: { consents: { 1: true, 8: false } }
+  }), false);
+  assert.equal(grantsWebAnalyticsConsent(undefined), false);
 });
 
 test("the analytics and advertising integrations share one TCF listener and replay its current choice", () => {

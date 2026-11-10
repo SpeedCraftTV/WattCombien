@@ -75,15 +75,23 @@ Les règles et adresses IP de GitHub Pages peuvent évoluer : vérifiez la docum
 
 Le dépôt est un site statique sans compilation. Dans **Cloudflare Dashboard → Workers & Pages → Create application → Pages → Connect to Git**, sélectionnez le dépôt et la branche à publier. Choisissez un préréglage **None** ou équivalent, laissez la commande de build vide et définissez le répertoire de sortie sur la racine du dépôt (`.`). Après le premier déploiement, vérifiez `https://wattcombien.pages.dev/ads.txt` et une page de simulateur. Le workflow `.github/workflows/deploy.yml` est destiné à GitHub Pages et n’est pas requis pour le déploiement Cloudflare Pages.
 
-## Google AdSense, Microsoft Clarity et consentement
+## Google AdSense, Microsoft Clarity, Cloudflare Web Analytics et consentement
 
-L’identifiant éditeur AdSense est configuré dans `js/config.js` et `ads.txt`. Chaque page charge le module local `js/adsense.js`, qui importe aussi le chargeur Clarity. Les deux modules partagent l’écoute de l’API IAB TCF 2.2 et appliquent des finalités séparées. AdSense se charge après un signal autorisant les finalités TCF 1, 3 et 4 et le fournisseur Google. Clarity se charge uniquement après un signal autorisant les finalités 1 et 8. Son identifiant `zbctlkmftd` est défini dans `js/config.js`. Aucun script tiers n’est ajouté statiquement aux pages.
+L’identifiant éditeur AdSense est configuré dans `js/config.js` et `ads.txt`. Chaque page charge le module local `js/adsense.js`, qui importe les chargeurs Clarity et Cloudflare Web Analytics. Les modules partagent l’écoute de l’API IAB TCF 2.2 et appliquent des finalités séparées. AdSense se charge après un signal autorisant les finalités TCF 1, 3 et 4 et le fournisseur Google. Clarity et Cloudflare Web Analytics se chargent uniquement après un choix valide autorisant les finalités 1 et 8. L’identifiant Clarity et le token Cloudflare sont configurés dans `js/config.js`. Aucun script tiers de ces services n’est ajouté directement au HTML.
 
-Avant de mettre ces outils en service, configurez dans Cloudflare Pages une CMP compatible avec IAB TCF 2.2 et certifiée par Google pour les annonces là où cela est requis. Installez son script avant le chargeur local afin que `__tcfapi` soit disponible. La CMP doit offrir le choix des finalités de mesure et de publicité, ainsi que le retrait du consentement. Sans signal CMP valide, aucun script Clarity ou AdSense n’est chargé.
+Avant de mettre ces outils en service, configurez dans Cloudflare Pages une CMP compatible avec IAB TCF 2.2 et certifiée par Google pour les annonces là où cela est requis. Installez son script avant le chargeur local afin que `__tcfapi` soit disponible. La CMP doit offrir le choix des finalités de mesure et de publicité, ainsi que le retrait du consentement. Sans signal CMP valide, aucun script Clarity, Cloudflare Web Analytics ou AdSense n’est chargé.
 
 Le module Clarity envoie également l’API `consentv2` de Microsoft avec les états `analytics_Storage` et `ad_Storage`. Le stockage analytique reflète le choix TCF 1 et 8. Le stockage publicitaire Microsoft reste refusé, car la CMP configurée pour AdSense ne représente pas nécessairement un consentement à Microsoft Advertising. En cas de retrait du consentement analytique après chargement de Clarity, le nouvel état refusé est transmis. Microsoft précise qu’en mode sans consentement, Clarity peut collecter des données sans cookies avec des fonctionnalités limitées. Si cette collecte n’est pas souhaitée après retrait, configurez et vérifiez le mode de consentement et les réglages du projet Clarity avant publication.
 
 Dans le projet Clarity, activez **Settings → Setup → Consent Mode**. Vérifiez le masquage des champs et contenus sensibles, les données collectées et les durées de conservation. Testez un refus, une acceptation, puis un retrait du choix. Une CMP fonctionnelle n’est actuellement pas incluse dans le dépôt. Consultez la [documentation Microsoft sur Consent Mode](https://learn.microsoft.com/en-us/clarity/setup-and-installation/consent-mode) et l’[API Consent V2](https://learn.microsoft.com/en-us/clarity/setup-and-installation/clarity-consent-api-v2). La présence des scripts ne garantit pas l’approbation AdSense ni la conformité juridique de la configuration.
+
+### Cloudflare Web Analytics
+
+Le token `f53bdf1fc5cd4b86925ed77fcefbf8a3` est configuré dans `js/config.js`. Le chargeur crée une seule balise module après consentement TCF valide. La page publique `https://wattcombien.pages.dev/` ne contenait pas de beacon Cloudflare lors de la vérification du 10 novembre 2026. Le réglage du tableau de bord Cloudflare Pages n’est pas versionné dans ce dépôt et doit être vérifié après déploiement.
+
+Pour éviter une injection automatique qui contournerait le choix CMP et ferait doublon, ouvrez **Cloudflare Dashboard → Workers & Pages → WattCombien → Metrics → Web Analytics** et laissez l’injection automatique désactivée. N’activez pas en parallèle la configuration automatique one-click de Web Analytics. Après déploiement, accordez le consentement analytique dans la CMP puis vérifiez dans les outils réseau du navigateur que `beacon.min.js` est chargé une seule fois et que le token transmis correspond à celui configuré. Un refus ne doit déclencher aucune requête au beacon.
+
+Pour voir les premières données, ouvrez **Cloudflare Dashboard → Web Analytics**, choisissez le site associé au hostname (`wattcombien.pages.dev`), puis consultez ses métriques. Cloudflare indique que les données peuvent prendre quelques minutes à apparaître. Les bloqueurs de publicité et de suivi peuvent empêcher le beacon côté navigateur. La réception réelle des données doit être confirmée dans le tableau de bord après le déploiement.
 
 ## Search Console et sitemap
 
@@ -95,8 +103,8 @@ Dans le projet Clarity, activez **Settings → Setup → Consent Mode**. Vérifi
 
 - Complétez les champs entre crochets de `pages/mentions-legales.html` avec les informations réelles de l’éditeur et vérifiez les obligations applicables avant publication.
 - La page Contact pointe vers les issues du dépôt GitHub. Vérifiez que ce dépôt est public et les issues activées, ou remplacez le lien par un canal de contact réel. Ne publiez pas une adresse inventée.
-- La politique de confidentialité décrit les calculs locaux, l’enregistrement volontaire, le partage par URL, Clarity et le chargement des scripts conditionné par la CMP.
-- Aucun faux bandeau ni CMP fictive n’est fourni. Clarity et AdSense restent inactifs tant qu’une CMP compatible n’est pas configurée et qu’un signal de consentement approprié n’est pas reçu.
+- La politique de confidentialité décrit les calculs locaux, l’enregistrement volontaire, le partage par URL, Clarity, Cloudflare Web Analytics et le chargement des scripts conditionné par la CMP.
+- Aucun faux bandeau ni CMP fictive n’est fourni. Clarity, Cloudflare Web Analytics et AdSense restent inactifs tant qu’une CMP compatible n’est pas configurée et qu’un signal de consentement approprié n’est pas reçu.
 
 ## AdSense
 

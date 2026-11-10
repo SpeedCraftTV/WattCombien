@@ -44,12 +44,16 @@
       <p>Le script Microsoft Clarity n’est chargé qu’après un choix CMP indiquant le consentement au stockage sur l’appareil et à la mesure d’audience, soit les finalités TCF 1 et 8. Le site transmet également à Clarity les états de stockage analytique et publicitaire par son API de consentement v2. Le stockage publicitaire Microsoft reste refusé. Si le consentement analytique est refusé ou absent, le script ne se charge pas. Si un consentement précédemment accordé est retiré, le nouvel état refusé est transmis à Clarity. Selon la documentation Microsoft, Clarity peut alors fonctionner en mode sans cookies avec des fonctionnalités limitées.</p>
       <p>Clarity peut enregistrer des interactions avec les pages, les clics, les déplacements du pointeur et des informations techniques de navigation. Consultez les réglages du projet Clarity, notamment le mode Consentement, le masquage des contenus, les durées de conservation et les conditions Microsoft. Les champs de formulaire et les contenus sensibles doivent rester masqués.</p>
 
+      <h2>Cloudflare Web Analytics</h2>
+      <p>Le beacon Cloudflare Web Analytics est chargé après un choix CMP autorisant les finalités TCF 1 et 8. En l’absence de choix valide ou en cas de refus, le script ne se charge pas. Il transmet à Cloudflare des mesures d’audience et de performance de navigation, comme les pages consultées, les référents et des indicateurs de performance. Le tableau de bord Cloudflare présente ces données selon les métriques et dimensions offertes par le service. Le token configuré identifie le site suivi.</p>
+      <p>La configuration ne charge qu’un seul beacon manuel. L’injection automatique de Web Analytics dans les paramètres Cloudflare Pages doit rester désactivée. Si vous modifiez le choix après le chargement du beacon, celui-ci ne peut pas être retiré du document déjà ouvert ; le choix refusé empêchera son chargement lors des pages suivantes. Consultez la documentation Cloudflare et les paramètres du service pour connaître les données traitées, leur conservation et les modalités applicables.</p>
+
       <h2>Autres traceurs et hébergement</h2>
       <p>Aucun autre outil d’analyse tel que Google Analytics n’est installé. L’hébergement Cloudflare Pages peut traiter des données techniques dans ses journaux conformément à ses propres conditions et à la configuration du service. Consultez les informations du fournisseur d’hébergement applicable.</p>
 
       <h2>Contact et droits</h2>
       <p>Les coordonnées de l’éditeur et les moyens d’exercer vos droits doivent être complétés dans les <a href="mentions-legales.html">mentions légales</a> avant publication. La page <a href="contact.html">contact</a> indique le canal actuellement disponible.</p>
-      <p><strong>Mise à jour :</strong> 10 novembre 2026. À vérifier et actualiser après la configuration de la CMP, de Clarity et des annonces.</p>
+      <p><strong>Mise à jour :</strong> 10 novembre 2026. À vérifier et actualiser après la configuration de la CMP, de Clarity, de Cloudflare Web Analytics et des annonces.</p>
     </article>
   </main>
   <footer class="site-footer">

@@ -20,6 +20,10 @@ export function grantsAdsConsent(tcData) {
 }
 
 export function grantsClarityAnalyticsConsent(tcData) {
+  return grantsWebAnalyticsConsent(tcData);
+}
+
+export function grantsWebAnalyticsConsent(tcData) {
   if (!isCompletedChoice(tcData)) return false;
 
   return CLARITY_ANALYTICS_PURPOSES.every((purpose) => tcData.purpose?.consents?.[purpose] === true);
