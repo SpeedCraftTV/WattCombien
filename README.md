@@ -106,53 +106,56 @@ Pour voir les premières données, ouvrez **Cloudflare Dashboard → Web Analyti
 - La politique de confidentialité couvre les calculs locaux, le stockage volontaire, les outils d’analyse et le futur formulaire. Sa base juridique et sa durée de conservation sont à renseigner avant d’activer ce dernier.
 - Aucun faux bandeau ni CMP fictive n’est fourni. Clarity, Cloudflare Web Analytics et AdSense restent inactifs tant qu’une CMP compatible n’est pas configurée et qu’un signal de consentement approprié n’est pas reçu.
 
-## Formulaire de contact, Supabase et Cloudflare Worker
+## Formulaire de contact, Supabase et Cloudflare Pages Functions
 
-Le formulaire de `pages/contact.html` est désactivé par défaut. Il ne transmet aucune donnée tant que les services, les informations de confidentialité et la configuration frontale ne sont pas complétés. Il n’envoie pas de courriel de notification : les demandes reçues seront consultables dans la table Supabase par un administrateur autorisé.
+Le formulaire de `pages/contact.html` est désactivé par défaut. Il ne transmet aucune donnée tant que les services, les informations de confidentialité et la configuration frontale ne sont pas complétés. Son unique endpoint est `functions/api/contact.js`, servi par Cloudflare Pages à `/api/contact`. Il n’envoie pas de courriel de notification : les demandes reçues seront consultables dans la table Supabase par un administrateur autorisé. GitHub Pages ne prend pas en charge les Cloudflare Pages Functions.
 
 ### 1. Créer et sécuriser la table Supabase
 
 1. Créez un projet Supabase et ouvrez **SQL Editor → New query**.
 2. Exécutez le fichier `supabase/migrations/20261110000000_create_contact_messages.sql`.
 3. Vérifiez dans **Table Editor** que `contact_messages` a RLS activé et qu’aucune politique n’accorde de lecture ou d’écriture aux rôles `anon` ou `authenticated`. La migration retire leurs privilèges SQL et n’accorde à `service_role` que l’insertion. Les administrateurs peuvent consulter les messages dans le tableau de bord Supabase.
-4. Copiez l’URL du projet. Gardez la clé `service_role` uniquement comme secret côté Worker. Ne la placez jamais dans `js/config.js`, dans une page HTML ou dans une variable publique Cloudflare.
+4. Copiez l’URL de base du projet, par exemple `https://PROJECT_REF.supabase.co`, sans ajouter `/rest/v1`. Créez ou récupérez une clé `secret` Supabase et gardez-la uniquement dans les secrets Cloudflare Pages. Ne la placez jamais dans `js/config.js`, dans une page HTML ou dans une variable publique.
 
 ### 2. Créer le widget Turnstile
 
-Dans **Cloudflare Dashboard → Turnstile → Add widget**, créez un widget géré et autorisez les domaines réellement utilisés, par exemple `wattcombien.pages.dev` et votre domaine personnalisé. Le `site key` est public et sera configuré dans le navigateur. La `secret key` reste exclusivement dans les secrets du Worker. Le Worker vérifie chaque jeton auprès de l’API Siteverify, ainsi que le hostname et l’action `contact`. La vérification côté navigateur seule n’est pas considérée comme une protection.
+Dans **Cloudflare Dashboard → Turnstile → Add widget**, créez un widget géré et autorisez les domaines réellement utilisés, notamment `wattcombien.pages.dev` et, si nécessaire, `speedcrafttv.github.io` ou votre domaine personnalisé. La Site Key `0x4AAAAAAF7Td1S4Wd6MOzt-` est intégrée à la configuration publique. La clé secrète doit être enregistrée dans les secrets du projet Cloudflare Pages, sous le nom exact `TURNSTILE_SECRET`. La Function vérifie chaque jeton auprès de l’API Siteverify, ainsi que le hostname et l’action `contact`. La vérification côté navigateur seule ne constitue pas une protection.
 
-### 3. Déployer le Worker
+### 3. Déployer la Pages Function
 
-Le manifeste est `worker/wrangler.toml` et le point d’entrée est `worker/src/index.js`. Le Worker n’accepte que les origines exactement listées, limite les requêtes à 5 par minute et par adresse source via la liaison Cloudflare de limitation de débit, valide les champs et le CAPTCHA, puis effectue une insertion sans lecture de la base. La limitation Cloudflare est approximative et peut s’appliquer séparément dans chaque point de présence.
+La Function est dans `functions/api/contact.js`; Cloudflare Pages mappe ce chemin vers `/api/contact`. Le projet doit être publié par l’intégration Git Cloudflare Pages ou par un déploiement Pages qui inclut le dossier `functions`. Le workflow GitHub Pages de ce dépôt ne déploie pas cette API.
 
-1. Remplacez `PROJECT_REF` dans `worker/wrangler.toml` par la référence Supabase réelle. Adaptez `ALLOWED_ORIGINS` à toutes les origines exactes du site, sans caractère générique, et `TURNSTILE_EXPECTED_HOSTNAMES` à tous les hostnames autorisés par le widget. Pour le domaine GitHub Pages de ce dépôt, l’origine est `https://speedcrafttv.github.io` et le hostname Turnstile `speedcrafttv.github.io`. Modifiez le `namespace_id` de la liaison de limitation s’il est déjà utilisé dans votre compte Cloudflare.
-2. Depuis la racine du dépôt, définissez les secrets sans les inscrire dans Git :
+Dans **Cloudflare Dashboard → Workers & Pages → WattCombien → Settings → Variables and Secrets**, ajoutez ces variables pour les environnements Production et Preview selon le besoin :
 
-   ```powershell
-   npx wrangler secret put TURNSTILE_SECRET_KEY --config worker/wrangler.toml
-   npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --config worker/wrangler.toml
-   ```
+| Nom | Type | Valeur |
+| --- | --- | --- |
+| `CONTACT_ENABLED` | Variable | `false` pendant la configuration, `true` uniquement après les essais |
+| `SUPABASE_URL` | Variable | URL de base HTTPS du projet, sans `/rest/v1` |
+| `TURNSTILE_EXPECTED_HOSTNAMES` | Variable | Hostnames exacts autorisés, séparés par des virgules |
+| `ALLOWED_ORIGINS` | Variable | Origines HTTPS exactes autorisées, séparées par des virgules |
+| `TURNSTILE_SECRET` | Secret | Secret Turnstile, jamais dans le dépôt |
+| `SUPABASE_SECRET_KEY` | Secret | Clé secrète Supabase, jamais dans le dépôt |
 
-3. Définissez `CONTACT_ENABLED` à `false` pendant la configuration. Déployez le Worker :
+4. Dans les réglages de build du projet Pages, utilisez la racine du dépôt comme répertoire de sortie (`.`), une commande de build vide et une version du système de build qui prend en charge les Functions. Si le projet utilise une autre méthode de déploiement, assurez-vous que le dossier `functions` est inclus à la racine du répertoire publié.
 
-   ```powershell
-   npx wrangler deploy --config worker/wrangler.toml
-   ```
+5. Pour limiter les abus, créez dans Cloudflare une règle WAF de limitation de débit ciblant `POST /api/contact`, par exemple cinq requêtes par minute par adresse IP. La disponibilité des règles dépend du plan Cloudflare. La Function respecte aussi une liaison `CONTACT_LIMITER` si vous en configurez une dans le projet.
 
-4. Testez le refus des origines inconnues, des CAPTCHA invalides, des messages incorrects et des requêtes trop fréquentes. Confirmez qu’un visiteur anonyme ne peut ni lire la table ni y écrire directement.
+6. Déclenchez un nouveau déploiement Pages après l’ajout des variables et secrets afin qu’ils soient disponibles à la Function.
 
 ### 4. Activer le formulaire après les tests
 
-Dans `js/config.js`, renseignez `contact.workerUrl` avec l’URL HTTPS complète terminant par `/api/contact`, `contact.turnstileSiteKey` avec le site key, puis activez `contact.enabled`. Renseignez également `legal.contactRetentionDays`, `legal.contactLegalBasis`, `legal.privacyEmail`, les champs éditeur, et mettez à jour les mentions légales et la politique. Ces champs manquants empêchent volontairement l’activation du formulaire.
+Dans `js/config.js`, `contact.turnstileSiteKey` contient déjà la Site Key fournie et `contact.apiUrl` vaut `/api/contact`. Pour le domaine Cloudflare Pages, conservez cette URL relative. Si le site est également servi sur GitHub Pages, configurez pour cette version une URL HTTPS complète pointant vers `https://wattcombien.pages.dev/api/contact`, et ajoutez `https://speedcrafttv.github.io` à `ALLOWED_ORIGINS`. Renseignez également `legal.contactRetentionDays`, `legal.contactLegalBasis`, `legal.privacyEmail` et les informations éditeur. Le formulaire ne s’active que lorsque les champs exigés sont renseignés et que `contact.enabled` passe à `true`.
 
-Dans les variables du Worker, renseignez `TURNSTILE_EXPECTED_HOSTNAMES` et `ALLOWED_ORIGINS` avec les hostnames et origines exacts. Quand les tests de bout en bout et les informations légales sont finalisés, passez `CONTACT_ENABLED` à `true` dans `worker/wrangler.toml` et redéployez le Worker. Configurez une tâche de suppression périodique dans Supabase selon la durée publiée, par exemple :
+`SUPABASE_URL` doit rester une URL de base comme `https://PROJECT_REF.supabase.co`; la Function ajoute elle-même `/rest/v1/contact_messages` une seule fois. La clé `SUPABASE_SECRET_KEY` est envoyée au Data API uniquement par la Function. N’activez pas la Function tant que vous n’avez pas vérifié que cette clé a les droits nécessaires pour insérer dans la table et qu’aucun rôle public ne peut lire les messages.
+
+Configurez une tâche de suppression périodique dans Supabase selon la durée publiée, par exemple :
 
 ```sql
 delete from public.contact_messages
 where received_at < now() - make_interval(days => 90);
 ```
 
-Remplacez `90` par la durée que vous aurez réellement choisie et publiée. Cette requête d’exemple n’est pas planifiée automatiquement par la migration. Définissez aussi qui peut accéder aux messages et comment les demandes d’effacement seront traitées. Le Worker ne stocke pas l’adresse IP dans la table; il l’utilise comme clé de limitation de débit Cloudflare et ne la transmet pas à Turnstile.
+Remplacez `90` par la durée que vous aurez réellement choisie et publiée. Cette requête d’exemple n’est pas planifiée automatiquement par la migration. Définissez aussi qui peut accéder aux messages et comment les demandes d’effacement seront traitées. La Function ne stocke pas l’adresse IP dans la table et ne la transmet pas à Turnstile.
 
 Le contact optionnel sert uniquement à répondre. Sans système de notification configuré, l’éditeur doit consulter la table Supabase pour traiter les demandes. Le formulaire ne doit pas être présenté comme opérationnel tant que chaque étape n’est pas achevée.
 
@@ -163,7 +166,7 @@ Le contact optionnel sert uniquement à répondre. Sans système de notification
 - Adresse de contact générale et adresse dédiée aux demandes relatives aux données personnelles.
 - Base juridique retenue pour le traitement des demandes et durée de conservation effective.
 - Entité Cloudflare contractante et adresse de notification correspondant au compte utilisé.
-- Domaines publics qui hébergent le site, domaines Turnstile autorisés et URL du Worker déployé.
+- Domaines publics qui hébergent le site et domaines Turnstile autorisés.
 - Responsable des accès Supabase, procédure de traitement des demandes et calendrier de suppression des messages.
 
 ## AdSense
@@ -183,7 +186,7 @@ pages/
 css/styles.css
 js/             (calculs, interface, SEO, configuration, simulateurs)
                 (chargeurs AdSense, Clarity et Cloudflare soumis au consentement CMP)
-worker/         (API de contact Cloudflare Workers, désactivée par défaut)
+functions/      (API de contact Cloudflare Pages Functions, désactivée par défaut)
 supabase/       (migration SQL de la table privée des messages)
 assets/favicon.svg
 tests/          (tests Node intégrés, sans dépendances)

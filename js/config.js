@@ -17,8 +17,8 @@ export const config = {
   },
   contact: {
     enabled: false,
-    workerUrl: "",
-    turnstileSiteKey: ""
+    apiUrl: "/api/contact",
+    turnstileSiteKey: "0x4AAAAAAF7Td1S4Wd6MOzt-"
   },
   legal: {
     publisherName: "",

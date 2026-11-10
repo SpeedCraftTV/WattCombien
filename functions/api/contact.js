@@ -79,18 +79,32 @@ function validPayload(payload) {
   return true;
 }
 
+function validSupabaseUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && url.hostname.endsWith(".supabase.co")
+      && !url.username
+      && !url.password
+      && !url.port
+      && (url.pathname === "/" || url.pathname === "")
+      && !url.search
+      && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
 function configured(env) {
   return env.CONTACT_ENABLED === "true"
-    && Boolean(env.TURNSTILE_SECRET_KEY)
+    && Boolean(env.TURNSTILE_SECRET)
     && expectedHostnames(env).length > 0
-    && Boolean(env.SUPABASE_URL)
-    && Boolean(env.SUPABASE_SERVICE_ROLE_KEY)
-    && Boolean(env.CONTACT_LIMITER)
+    && validSupabaseUrl(env.SUPABASE_URL)
+    && Boolean(env.SUPABASE_SECRET_KEY)
     && allowedOrigins(env).length > 0;
 }
 
-export async function handleRequest(request, env, fetchImpl = fetch) {
-  const url = new URL(request.url);
+async function handleContact(request, env, fetchImpl = fetch) {
   const origin = request.headers.get("Origin");
   const origins = allowedOrigins(env);
   const corsOrigin = origin && origins.includes(origin) ? origin : null;
@@ -110,7 +124,6 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
   }
 
   if (!corsOrigin) return jsonResponse({ error: "forbidden" }, 403);
-  if (url.pathname !== "/api/contact") return jsonResponse({ error: "not_found" }, 404, corsOrigin);
   if (request.method !== "POST") {
     const response = jsonResponse({ error: "method_not_allowed" }, 405, corsOrigin);
     response.headers.set("Allow", "POST, OPTIONS");
@@ -123,14 +136,15 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
     return jsonResponse({ error: "invalid_request" }, 400, corsOrigin);
   }
 
-  const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
-  let limit;
-  try {
-    limit = await env.CONTACT_LIMITER.limit({ key: ip });
-  } catch {
-    return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
+  const ip = request.headers.get("CF-Connecting-IP");
+  if (env.CONTACT_LIMITER && ip) {
+    try {
+      const limit = await env.CONTACT_LIMITER.limit({ key: ip });
+      if (!limit.success) return jsonResponse({ error: "rate_limited" }, 429, corsOrigin);
+    } catch {
+      return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
+    }
   }
-  if (!limit.success) return jsonResponse({ error: "rate_limited" }, 429, corsOrigin);
 
   const payload = await readJson(request);
   if (!validPayload(payload)) return jsonResponse({ error: "invalid_request" }, 400, corsOrigin);
@@ -141,7 +155,7 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        secret: env.TURNSTILE_SECRET_KEY,
+        secret: env.TURNSTILE_SECRET,
         response: payload.turnstileToken
       })
     });
@@ -157,22 +171,12 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
     return jsonResponse({ error: "captcha_failed" }, 400, corsOrigin);
   }
 
-  let supabaseUrl;
   try {
-    supabaseUrl = new URL(env.SUPABASE_URL);
-  } catch {
-    return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
-  }
-  if (supabaseUrl.protocol !== "https:") {
-    return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
-  }
-
-  try {
-    const insertion = await fetchImpl(new URL("/rest/v1/contact_messages", supabaseUrl), {
+    const supabaseUrl = new URL("/rest/v1/contact_messages", env.SUPABASE_URL);
+    const insertion = await fetchImpl(supabaseUrl, {
       method: "POST",
       headers: {
-        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        apikey: env.SUPABASE_SECRET_KEY,
         "Content-Type": "application/json",
         Prefer: "return=minimal"
       },
@@ -191,8 +195,14 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
   return jsonResponse({ ok: true }, 201, corsOrigin);
 }
 
-export default {
-  fetch(request, env) {
-    return handleRequest(request, env);
+export async function onRequest(context) {
+  try {
+    return await handleContact(context.request, context.env);
+  } catch {
+    const origin = context.request.headers.get("Origin");
+    const allowed = allowedOrigins(context.env);
+    return jsonResponse({ error: "service_unavailable" }, 503, origin && allowed.includes(origin) ? origin : null);
   }
-};
+}
+
+export const __test = { handleContact, validPayload, validSupabaseUrl };

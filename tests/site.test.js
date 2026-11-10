@@ -94,26 +94,27 @@ test("the contact form stays disabled until its public configuration and legal s
   const loader = await readFile(path.join(root, "js", "contact-form.js"), "utf8");
   const page = await readFile(path.join(root, "pages", "contact.html"), "utf8");
   assert.match(config, /contact:\s*\{\s*enabled:\s*false/);
+  assert.match(config, /turnstileSiteKey:\s*"0x4AAAAAAF7Td1S4Wd6MOzt-"/);
   assert.match(config, /contactRetentionDays:\s*null/);
   assert.match(loader, /config\.contact\.enabled/);
   assert.match(loader, /config\.legal\.contactRetentionDays/);
-  assert.match(loader, /turnstile\/v0\/api\.js/);
+  assert.match(loader, /https:\/\/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/);
   assert.match(page, /Le formulaire n’est pas encore ouvert/);
   assert.match(page, /<fieldset id="contact-fields" disabled>/);
 });
 
-test("the contact database migration denies public access and grants only Worker insertion", async () => {
+test("the contact database migration denies public access and grants only Pages Function insertion", async () => {
   const migration = await readFile(path.join(root, "supabase", "migrations", "20261110000000_create_contact_messages.sql"), "utf8");
-  const worker = await readFile(path.join(root, "worker", "src", "index.js"), "utf8");
-  const workerConfig = await readFile(path.join(root, "worker", "wrangler.toml"), "utf8");
+  const worker = await readFile(path.join(root, "functions", "api", "contact.js"), "utf8");
   assert.match(migration, /enable row level security/i);
   assert.match(migration, /revoke all .* from public, anon, authenticated, service_role/i);
   assert.match(migration, /grant insert .* to service_role/i);
   assert.doesNotMatch(migration, /create policy/i);
   assert.match(worker, /siteverify/);
-  assert.match(worker, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(worker, /SUPABASE_SECRET_KEY/);
   assert.match(worker, /return=minimal/);
-  assert.match(workerConfig, /CONTACT_ENABLED = "false"/);
+  assert.match(worker, /export async function onRequest/);
+  assert.match(worker, /env\.TURNSTILE_SECRET/);
 });
 
 test("every page uses the same visitor-facing footer", async () => {

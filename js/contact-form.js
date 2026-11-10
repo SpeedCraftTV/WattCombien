@@ -10,14 +10,16 @@ if (form && availability) {
   const widget = form.querySelector("#contact-turnstile");
   const intro = document.querySelector("#contact-intro");
   const ready = config.contact.enabled
-    && /^https:\/\/[a-z0-9.-]+(?::\d+)?\/api\/contact$/i.test(config.contact.workerUrl)
-    && /^[0-9A-Za-z_-]{20,}$/.test(config.contact.turnstileSiteKey)
+    && (/^\/api\/contact$/.test(config.contact.apiUrl)
+      || /^https:\/\/[a-z0-9.-]+(?::\d+)?\/api\/contact$/i.test(config.contact.apiUrl))
+    && config.contact.turnstileSiteKey === "0x4AAAAAAF7Td1S4Wd6MOzt-"
     && Number.isInteger(config.legal.contactRetentionDays)
     && config.legal.contactRetentionDays > 0
     && typeof config.legal.contactLegalBasis === "string"
     && config.legal.contactLegalBasis.trim().length > 0;
   let widgetId;
   let turnstileLoading = false;
+  let submitting = false;
 
   function setResult(message, state = "") {
     result.textContent = message;
@@ -33,7 +35,7 @@ if (form && availability) {
     fieldset.disabled = false;
     submitButton.disabled = true;
 
-    window.onWattCombienTurnstileReady = () => {
+    function renderTurnstile() {
       try {
         widgetId = window.turnstile.render(widget, {
           sitekey: config.contact.turnstileSiteKey,
@@ -53,15 +55,16 @@ if (form && availability) {
         fieldset.disabled = true;
         setResult("Impossible d’initialiser la vérification anti-robot. Réessayez plus tard.", "error");
       }
-    };
+    }
 
     fieldset.addEventListener("focusin", () => {
       if (turnstileLoading || window.turnstile) return;
       turnstileLoading = true;
       const turnstileScript = document.createElement("script");
-      turnstileScript.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onWattCombienTurnstileReady&render=explicit";
+      turnstileScript.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
       turnstileScript.async = true;
       turnstileScript.defer = true;
+      turnstileScript.addEventListener("load", renderTurnstile, { once: true });
       turnstileScript.onerror = () => {
         availability.textContent = "La vérification anti-robot ne peut pas être chargée. Le formulaire reste indisponible.";
         fieldset.disabled = true;
@@ -72,6 +75,7 @@ if (form && availability) {
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (submitting) return;
       if (!form.reportValidity() || widgetId === undefined) return;
 
       const token = window.turnstile.getResponse(widgetId);
@@ -80,6 +84,7 @@ if (form && availability) {
         return;
       }
 
+      submitting = true;
       submitButton.disabled = true;
       setResult("Envoi en cours…");
       const formData = new FormData(form);
@@ -91,7 +96,7 @@ if (form && availability) {
       };
 
       try {
-        const response = await fetch(config.contact.workerUrl, {
+        const response = await fetch(config.contact.apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -116,6 +121,7 @@ if (form && availability) {
           : error.message, "error");
       } finally {
         window.turnstile.reset(widgetId);
+        submitting = false;
         submitButton.disabled = true;
       }
     });
