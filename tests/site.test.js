@@ -93,11 +93,16 @@ test("the contact form stays disabled until its public configuration and legal s
   const config = await readFile(path.join(root, "js", "config.js"), "utf8");
   const loader = await readFile(path.join(root, "js", "contact-form.js"), "utf8");
   const page = await readFile(path.join(root, "pages", "contact.html"), "utf8");
+  const privacy = await readFile(path.join(root, "pages", "confidentialite.html"), "utf8");
   assert.match(config, /contact:\s*\{\s*enabled:\s*false/);
+  assert.match(config, /legalSettingsApproved:\s*false/);
   assert.match(config, /turnstileSiteKey:\s*"0x4AAAAAAF7Td1S4Wd6MOzt-"/);
-  assert.match(config, /contactRetentionDays:\s*null/);
+  assert.match(config, /contactRetentionDays:\s*365/);
   assert.match(loader, /config\.contact\.enabled/);
+  assert.match(loader, /config\.contact\.legalSettingsApproved === true/);
   assert.match(loader, /config\.legal\.contactRetentionDays/);
+  assert.match(privacy, /proposition non encore validée/);
+  assert.match(privacy, /365 jours à compter de la réception/);
   assert.match(loader, /https:\/\/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/);
   assert.match(loader, /form\.checkValidity\(\)/);
   assert.match(loader, /turnstileToken = token/);

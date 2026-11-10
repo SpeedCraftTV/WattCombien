@@ -53,6 +53,7 @@ test("the contact form requires valid fields and Turnstile, and reports success 
     FormData: globalThis.FormData
   };
   config.contact.enabled = true;
+  config.contact.legalSettingsApproved = true;
   config.contact.apiUrl = "/api/contact";
   config.contact.turnstileSiteKey = "0x4AAAAAAF7Td1S4Wd6MOzt-";
   config.legal.contactRetentionDays = 30;

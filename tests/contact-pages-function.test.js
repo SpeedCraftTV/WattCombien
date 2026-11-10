@@ -186,10 +186,34 @@ test("the Pages Function validates HTTP methods and handles allowed preflight re
 });
 
 test("the Pages Function entry point rejects an unconfigured endpoint", async () => {
-  const response = await onRequest({
-    request: request(payload),
-    env: { ...env, CONTACT_ENABLED: "false" }
-  });
-  assert.equal(response.status, 503);
-  assert.deepEqual(await response.json(), { error: "service_unavailable" });
+  const errors = [];
+  const originalError = console.error;
+  console.error = (...args) => errors.push(args);
+  try {
+    const response = await onRequest({
+      request: request(payload),
+      env: {
+        ...env,
+        CONTACT_ENABLED: "false",
+        TURNSTILE_SECRET: "",
+        SUPABASE_URL: "invalid",
+        SUPABASE_SECRET_KEY: ""
+      }
+    });
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), { error: "service_unavailable" });
+    assert.deepEqual(__test.missingConfiguration({
+      ...env,
+      CONTACT_ENABLED: "false",
+      TURNSTILE_SECRET: "",
+      SUPABASE_URL: "invalid",
+      SUPABASE_SECRET_KEY: ""
+    }), ["CONTACT_ENABLED", "TURNSTILE_SECRET", "SUPABASE_URL", "SUPABASE_SECRET_KEY"]);
+    assert.deepEqual(errors, [[
+      "[contact] incomplete production configuration",
+      ["CONTACT_ENABLED", "TURNSTILE_SECRET", "SUPABASE_URL", "SUPABASE_SECRET_KEY"]
+    ]]);
+  } finally {
+    console.error = originalError;
+  }
 });

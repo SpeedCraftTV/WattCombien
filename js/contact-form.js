@@ -10,6 +10,7 @@ if (form && availability) {
   const widget = form.querySelector("#contact-turnstile");
   const intro = document.querySelector("#contact-intro");
   const ready = config.contact.enabled
+    && config.contact.legalSettingsApproved === true
     && (/^\/api\/contact$/.test(config.contact.apiUrl)
       || /^https:\/\/[a-z0-9.-]+(?::\d+)?\/api\/contact$/i.test(config.contact.apiUrl))
     && config.contact.turnstileSiteKey === "0x4AAAAAAF7Td1S4Wd6MOzt-"

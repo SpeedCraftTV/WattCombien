@@ -104,7 +104,7 @@ Pour voir les premières données, ouvrez **Cloudflare Dashboard → Web Analyti
 - L’adresse publique de contact et d’exercice des droits est `speedoutv.pro@gmail.com`. Les pages juridiques présentent WattCombien comme nom public et indiquent que le statut non professionnel n’est pas juridiquement confirmé.
 - `wattcombien.pages.dev` et sa Pages Function sont servis par Cloudflare Pages. Le workflow du dépôt publie aussi une version distincte via GitHub Pages à `speedcrafttv.github.io/WattCombien`; les mentions légales identifient le prestataire correspondant à chaque URL.
 - L’exception d’anonymat de l’article 6, III, 2 de la LCEN ne peut être retenue qu’après vérification du statut non professionnel au vu de l’activité réelle, y compris le projet de monétisation, et après communication confidentielle des informations personnelles requises à l’hébergeur. Les mentions publiques ne remplacent pas cette démarche. L’identité requise du responsable au titre de l’article 13 du RGPD reste à vérifier avant toute collecte de données personnelles.
-- Le formulaire reste désactivé, sa base juridique et sa durée de conservation n’étant pas définies. Aucun bandeau ou CMP n’est fourni dans le dépôt. Les modules AdSense, Clarity et Cloudflare Analytics attendent un signal CMP, mais toute injection automatique Cloudflare doit aussi être vérifiée dans le tableau de bord avant activation.
+- Le formulaire reste désactivé. Une durée maximale provisoire de 365 jours et des bases juridiques proposées sont préparées dans `js/config.js`, mais attendent l’approbation de l’éditeur. Le formulaire exige aussi `contact.legalSettingsApproved: true`. Aucun bandeau ou CMP n’est fourni dans le dépôt. Les modules AdSense, Clarity et Cloudflare Analytics attendent un signal CMP, mais toute injection automatique Cloudflare doit aussi être vérifiée dans le tableau de bord avant activation.
 
 ## Formulaire de contact, Supabase et Cloudflare Pages Functions
 
@@ -132,7 +132,7 @@ Dans **Cloudflare Dashboard → Workers & Pages → WattCombien → Settings →
 | `CONTACT_ENABLED` | Variable | `false` pendant la configuration, `true` uniquement après les essais |
 | `SUPABASE_URL` | Variable | URL HTTPS du projet, avec ou sans suffixe `/rest/v1` |
 | `TURNSTILE_EXPECTED_HOSTNAMES` | Variable | Hostnames exacts autorisés, séparés par des virgules |
-| `ALLOWED_ORIGINS` | Variable | Origines HTTPS supplémentaires exactes, séparées par des virgules. L’origine HTTPS identique à l’URL reçue par la Function est acceptée automatiquement. |
+| `ALLOWED_ORIGINS` | Variable | Origines HTTPS exactes, séparées par des virgules. Pour le domaine public, saisir `https://wattcombien.pages.dev` sans crochets, parenthèses, chemin ni barre oblique finale. L’origine HTTPS identique à l’URL reçue par la Function est également acceptée automatiquement. |
 | `TURNSTILE_SECRET` | Secret | Secret Turnstile, jamais dans le dépôt |
 | `SUPABASE_SECRET_KEY` | Secret | Clé secrète Supabase, jamais dans le dépôt |
 
@@ -144,7 +144,9 @@ Dans **Cloudflare Dashboard → Workers & Pages → WattCombien → Settings →
 
 ### 4. Activer le formulaire après les tests
 
-Dans `js/config.js`, `contact.turnstileSiteKey` contient déjà la Site Key fournie et `contact.apiUrl` vaut `/api/contact`. Pour le domaine Cloudflare Pages, conservez cette URL relative. Si le site est également servi sur GitHub Pages, configurez pour cette version une URL HTTPS complète pointant vers `https://wattcombien.pages.dev/api/contact`, et ajoutez `https://speedcrafttv.github.io` à `ALLOWED_ORIGINS`. Renseignez également `legal.contactRetentionDays`, `legal.contactLegalBasis`, `legal.privacyEmail` et les informations éditeur. Le formulaire ne s’active que lorsque les champs exigés sont renseignés et que `contact.enabled` passe à `true`.
+Dans `js/config.js`, `contact.turnstileSiteKey` contient déjà la Site Key fournie et `contact.apiUrl` vaut `/api/contact`. Pour le domaine Cloudflare Pages, conservez cette URL relative. Si le site est également servi sur GitHub Pages, configurez pour cette version une URL HTTPS complète pointant vers `https://wattcombien.pages.dev/api/contact`, et ajoutez `https://speedcrafttv.github.io` à `ALLOWED_ORIGINS`. Les champs `legal.contactRetentionDays: 365` et `legal.contactLegalBasis` sont des propositions, pas des choix validés. Après vérification des fondements, des durées, de la politique de confidentialité et des informations obligatoires du responsable, l’éditeur devra confirmer ces choix en passant `contact.legalSettingsApproved` à `true`. Le formulaire ne s’active que lorsque cet accord, la configuration des services et `contact.enabled: true` sont présents.
+
+Pour diagnostiquer la garde d’origine en production, une requête `OPTIONS` same-origin doit répondre `204` et un `GET` same-origin `405` avec `Allow: POST, OPTIONS`. Un `GET` direct sans en-tête `Origin` peut répondre `403`. Dans **Workers & Pages → WattCombien → Settings → Variables and Secrets → Production**, vérifiez `ALLOWED_ORIGINS` à la valeur exacte `https://wattcombien.pages.dev`, sans barre finale, et contrôlez que les secrets et variables sont définis dans l’environnement Production. Puis, dans **Deployments**, vérifiez que le déploiement actif correspond à la branche `main` et au commit contenant `functions/api/contact.js`. Après tout changement de variable ou de code, redéployez. Un POST de forme correcte avec un jeton volontairement invalide ne doit jamais insérer de message; en fonctionnement configuré, il doit atteindre la vérification Turnstile et être rejeté avec `captcha_failed`. Une réponse `503` avant cette étape indique une configuration incomplète. Les journaux de la Function indiquent alors les noms des variables absentes ou invalides sans en afficher les valeurs. Les échecs Turnstile, Supabase et limiteur sont aussi journalisés par étape, sans enregistrer le contenu du message, l’adresse e-mail, les clés ou le jeton. Ne testez pas de jeton valide avant de confirmer l’ensemble des réglages.
 
 `SUPABASE_URL` peut être l’URL de base comme `https://PROJECT_REF.supabase.co`, ou la même URL terminant par `/rest/v1`. La Function accepte les deux formats et construit `/rest/v1/contact_messages` une seule fois. La clé secrète Supabase récente est envoyée dans l’en-tête `apikey` côté serveur. Pour une ancienne clé JWT `service_role`, la Function ajoute aussi l’en-tête `Authorization: Bearer`. N’activez pas la Function tant que vous n’avez pas vérifié que cette clé a les droits nécessaires pour insérer dans la table et qu’aucun rôle public ne peut lire les messages. La date de création est définie par défaut en base, le code ne dépend donc pas du nom de la colonne dans sa requête d’insertion.
 
@@ -152,10 +154,10 @@ Configurez une tâche de suppression périodique dans Supabase selon la durée p
 
 ```sql
 delete from public.contact_messages
-where created_at < now() - make_interval(days => 90);
+where created_at < now() - make_interval(days => 365);
 ```
 
-Remplacez `90` par la durée que vous aurez réellement choisie et publiée. Cette requête d’exemple n’est pas planifiée automatiquement par la migration. Définissez aussi qui peut accéder aux messages et comment les demandes d’effacement seront traitées. La Function ne stocke pas l’adresse IP dans la table et ne la transmet pas à Turnstile.
+Cette durée de 365 jours est une proposition à approuver, pas une obligation légale. Cette requête d’exemple n’est pas planifiée automatiquement par la migration. Prévoir aussi une suppression plus tôt des demandes closes lorsque leur conservation n’est plus nécessaire, et définir le traitement des demandes liées aux droits. Définissez qui peut accéder aux messages et comment les demandes d’effacement seront traitées. La Function ne stocke pas l’adresse IP dans la table et ne la transmet pas à Turnstile.
 
 Le contact optionnel sert uniquement à répondre. Sans système de notification configuré, l’éditeur doit consulter la table Supabase pour traiter les demandes. Le formulaire ne doit pas être présenté comme opérationnel tant que chaque étape n’est pas achevée.
 
@@ -164,7 +166,7 @@ Le contact optionnel sert uniquement à répondre. Sans système de notification
 - Nom légal ou raison sociale de l’éditeur, forme juridique, adresse professionnelle et numéro d’immatriculation applicable.
 - Nom du directeur ou de la directrice de publication.
 - Adresse de contact générale et adresse dédiée aux demandes relatives aux données personnelles.
-- Base juridique retenue pour le traitement des demandes et durée de conservation effective.
+- Validation des bases juridiques proposées, de la durée maximale de 365 jours et des modalités de suppression effective.
 - Entité Cloudflare contractante et adresse de notification correspondant au compte utilisé.
 - Domaines publics qui hébergent le site et domaines Turnstile autorisés.
 - Responsable des accès Supabase, procédure de traitement des demandes et calendrier de suppression des messages.

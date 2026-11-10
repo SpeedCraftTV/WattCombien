@@ -17,6 +17,7 @@ export const config = {
   },
   contact: {
     enabled: false,
+    legalSettingsApproved: false,
     apiUrl: "/api/contact",
     turnstileSiteKey: "0x4AAAAAAF7Td1S4Wd6MOzt-"
   },
@@ -28,8 +29,8 @@ export const config = {
     publicationDirector: "",
     contactEmail: "",
     privacyEmail: "",
-    contactRetentionDays: null,
-    contactLegalBasis: "",
+    contactRetentionDays: 365,
+    contactLegalBasis: "Proposition à confirmer : intérêt légitime pour les demandes ordinaires, obligation légale pour les demandes d’exercice des droits, et mesures précontractuelles uniquement lorsqu’elles sont réellement applicables.",
     cloudflareHostingDetails: ""
   }
 };

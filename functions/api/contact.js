@@ -102,12 +102,14 @@ function validSupabaseUrl(value) {
   }
 }
 
-function configured(env) {
-  return env.CONTACT_ENABLED === "true"
-    && Boolean(env.TURNSTILE_SECRET)
-    && expectedHostnames(env).length > 0
-    && validSupabaseUrl(env.SUPABASE_URL)
-    && Boolean(env.SUPABASE_SECRET_KEY);
+function missingConfiguration(env) {
+  const missing = [];
+  if (env.CONTACT_ENABLED !== "true") missing.push("CONTACT_ENABLED");
+  if (!env.TURNSTILE_SECRET) missing.push("TURNSTILE_SECRET");
+  if (expectedHostnames(env).length === 0) missing.push("TURNSTILE_EXPECTED_HOSTNAMES");
+  if (!validSupabaseUrl(env.SUPABASE_URL)) missing.push("SUPABASE_URL");
+  if (!env.SUPABASE_SECRET_KEY) missing.push("SUPABASE_SECRET_KEY");
+  return missing;
 }
 
 async function handleContact(request, env, fetchImpl = fetch) {
@@ -135,7 +137,9 @@ async function handleContact(request, env, fetchImpl = fetch) {
     response.headers.set("Allow", "POST, OPTIONS");
     return response;
   }
-  if (!configured(env)) {
+  const missing = missingConfiguration(env);
+  if (missing.length > 0) {
+    console.error("[contact] incomplete production configuration", missing);
     return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
   }
   if (!request.headers.get("Content-Type")?.toLowerCase().startsWith("application/json")) {
@@ -148,6 +152,7 @@ async function handleContact(request, env, fetchImpl = fetch) {
       const limit = await env.CONTACT_LIMITER.limit({ key: ip });
       if (!limit.success) return jsonResponse({ error: "rate_limited" }, 429, corsOrigin);
     } catch {
+      console.error("[contact] rate limiter failed");
       return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
     }
   }
@@ -165,15 +170,20 @@ async function handleContact(request, env, fetchImpl = fetch) {
         response: payload.turnstileToken
       })
     });
-    if (!verification.ok) return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
+    if (!verification.ok) {
+      console.error("[contact] Turnstile Siteverify returned HTTP", verification.status);
+      return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
+    }
     captcha = await verification.json();
   } catch {
+    console.error("[contact] Turnstile Siteverify request failed");
     return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
   }
 
   if (!captcha.success
     || !expectedHostnames(env).includes(String(captcha.hostname ?? "").toLowerCase())
     || captcha.action !== "contact") {
+    console.error("[contact] Turnstile validation rejected");
     return jsonResponse({ error: "captcha_failed" }, 400, corsOrigin);
   }
 
@@ -196,8 +206,12 @@ async function handleContact(request, env, fetchImpl = fetch) {
         status: "new"
       })
     });
-    if (!insertion.ok) return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
+    if (!insertion.ok) {
+      console.error("[contact] Supabase insertion returned HTTP", insertion.status);
+      return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
+    }
   } catch {
+    console.error("[contact] Supabase insertion request failed");
     return jsonResponse({ error: "service_unavailable" }, 503, corsOrigin);
   }
 
@@ -208,10 +222,11 @@ export async function onRequest(context) {
   try {
     return await handleContact(context.request, context.env);
   } catch {
+    console.error("[contact] unexpected request failure");
     const origin = context.request.headers.get("Origin");
     const allowed = allowedOrigins(context.env, context.request.url);
     return jsonResponse({ error: "service_unavailable" }, 503, origin && allowed.includes(origin) ? origin : null);
   }
 }
 
-export const __test = { handleContact, validPayload, validSupabaseUrl };
+export const __test = { handleContact, validPayload, validSupabaseUrl, missingConfiguration };
