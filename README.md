@@ -48,11 +48,17 @@ Les tests vérifient les conversions et validations principales, l’unicité de
 
 1. Créez ou choisissez le dépôt GitHub destiné au site, puis poussez tout le contenu du dépôt dans la branche de publication (par exemple `main`). Ne placez pas le site dans un sous-dossier : `index.html` doit rester à la racine.
 2. Ouvrez **Settings → Pages** du dépôt.
-3. Dans **Build and deployment**, choisissez **Deploy from a branch**, sélectionnez la branche publiée et le dossier **/(root)**, puis enregistrez.
-4. Attendez la fin du déploiement. Testez l’adresse de Pages sur ordinateur et mobile, ainsi que chaque simulateur.
+3. Dans **Build and deployment → Source**, sélectionnez **GitHub Actions**, puis enregistrez.
+4. Poussez les changements sur `main`. Dans **Actions**, vérifiez que les jobs `build` et `deploy` réussissent. Testez ensuite l’adresse Pages sur ordinateur et mobile, ainsi que chaque simulateur.
 5. Pour un dépôt projet, l’URL publique comprend le chemin du dépôt, par exemple `https://UTILISATEUR.github.io/NOM-DU-DEPOT/`. Pour un dépôt utilisateur ou un domaine personnalisé, elle est généralement à la racine du domaine.
-6. Dans `js/config.js`, renseignez `siteUrl` comme **base publique** sans slash final, par exemple `https://UTILISATEUR.github.io/NOM-DU-DEPOT` ou `https://www.exemple.fr`. Pour les pages GitHub d’un projet, conserver le chemin `/NOM-DU-DEPOT` est important. La balise canonical est alors générée sur chaque page ; tant que le champ est vide, aucune canonical n’est ajoutée.
-7. Remplacez `YOUR-DOMAIN.example` dans `sitemap.xml` et `robots.txt` par cette même base publique. Pour un dépôt de projet, incluez le chemin du dépôt dans chaque URL du sitemap (par exemple `https://UTILISATEUR.github.io/NOM-DU-DEPOT/pages/...`). Vérifiez que chaque URL retourne bien la bonne page.
+6. La configuration initiale pointe vers `https://speedcrafttv.github.io/WattCombien`. Si vous publiez sous une autre adresse, remplacez `siteUrl` dans `js/config.js` par la **base publique sans slash final**. Pour un dépôt projet, conservez le chemin `/NOM-DU-DEPOT`. La balise canonical est générée sur chaque page à partir de cette base.
+7. Si vous changez de domaine, mettez aussi à jour toutes les URLs de `sitemap.xml` et la directive `Sitemap:` de `robots.txt` avec cette même base. Vérifiez que chaque URL retourne bien la bonne page.
+
+### Déploiement par workflow GitHub Actions
+
+Le dépôt contient `.github/workflows/deploy.yml`. Il lance `npm test` sur `main`, assemble dans `_site` les seuls fichiers nécessaires au site, puis publie cet artefact statique. Aucun bundler ni commande `npm run build` n’est nécessaire.
+
+Si un déploiement échoue, ouvrez **Actions → le workflow “Deploy static site to GitHub Pages” → l’exécution concernée → le job en échec → le détail de l’étape rouge**. Pour le diagnostic, relevez le lien de l’exécution, le nom du job, le message d’erreur complet et le SHA du commit. Vérifiez également **Settings → Pages** et que le workflow est autorisé à utiliser l’environnement `github-pages`.
 
 ### Domaine personnalisé et Cloudflare
 

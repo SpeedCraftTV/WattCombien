@@ -95,7 +95,7 @@ function resultText() {
   const current = updateMain();
   if (!current) return null;
   const { input, result } = current;
-  return `${input.name} — ${input.power} W, ${input.hours} h/jour, ${input.days} j/semaine, ${input.quantity} appareil(s), ${number(input.price, 4)} €/kWh. Coût estimé : ${money(result.monthlyCost)} sur 30 jours et ${money(result.annualCost)} par an (${number(result.annualKwh)} kWh/an).`;
+  return `${input.name} : ${input.power} W, ${input.hours} h/jour, ${input.days} j/semaine, ${input.quantity} appareil(s), ${number(input.price, 4)} €/kWh. Coût estimé : ${money(result.monthlyCost)} sur 30 jours et ${money(result.annualCost)} par an (${number(result.annualKwh)} kWh/an).`;
 }
 
 $("#copy-button").addEventListener("click", async () => {
@@ -194,7 +194,7 @@ function addComparisonCard(device = { name: "Nouvel appareil", power: 100, hours
   card.innerHTML = `<div class="compare-card-head"><label for="compare-name-${id}">Appareil ${id}</label><button type="button" class="remove-device" aria-label="Supprimer l’appareil ${id}">×</button></div>
     <input id="compare-name-${id}" data-key="name" type="text" maxlength="60" value="${device.name.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")}" aria-label="Nom de l’appareil ${id}">
     <div class="compare-fields"><label>Puissance (W)<input data-key="power" type="number" min="0" max="1000000" step="any" value="${device.power}"></label><label>h/jour<input data-key="hours" type="number" min="0" max="24" step="any" value="${device.hours}"></label><label>j/semaine<input data-key="days" type="number" min="0" max="7" step="1" value="${device.days}"></label><label>Quantité<input data-key="quantity" type="number" min="1" max="10000" step="1" value="${device.quantity}"></label></div>
-    <div class="compare-cost"><span>Coût annuel estimé</span><strong>—</strong><small>— kWh/an</small></div>`;
+    <div class="compare-cost"><span>Coût annuel estimé</span><strong>En attente</strong><small>En attente</small></div>`;
   card.addEventListener("input", updateComparison);
   $(".remove-device", card).addEventListener("click", () => { card.remove(); updateComparison(); });
   comparisonList.append(card);
@@ -223,7 +223,7 @@ function updateComparison() {
     } catch {
       card.classList.add("invalid");
       $(".compare-cost strong", card).textContent = "Valeurs à vérifier";
-      $(".compare-cost small", card).textContent = "Heures : 0–24 · jours : 0–7";
+      $(".compare-cost small", card).textContent = "Heures : de 0 à 24, jours : de 0 à 7.";
       invalid = true;
     }
   }

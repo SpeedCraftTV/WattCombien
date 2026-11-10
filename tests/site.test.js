@@ -32,6 +32,14 @@ test("toutes les pages ont un titre unique et un seul H1", async () => {
   }
 });
 
+test("les textes HTML et les chaînes de l’interface ne contiennent pas de tirets cadratins ou demi-cadratins", async () => {
+  const files = [...await htmlFiles(), path.join(root, "js", "app.js"), path.join(root, "js", "simulator.js")];
+  for (const file of files) {
+    const text = await readFile(file, "utf8");
+    assert.doesNotMatch(text, /[—–]/, `${path.relative(root, file)} contient un tiret long`);
+  }
+});
+
 test("tous les liens et ressources locaux existent et les fragments sont valides", async () => {
   const files = await htmlFiles();
   const checks = [];

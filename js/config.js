@@ -1,7 +1,7 @@
 export const config = {
   siteName: "WattCombien",
-  // Set the public site base here, including a GitHub Pages repository path if needed.
-  siteUrl: "",
+  // Change this base if the site is published on a custom domain.
+  siteUrl: "https://speedcrafttv.github.io/WattCombien",
   adsense: {
     enabled: false,
     publisherId: "",

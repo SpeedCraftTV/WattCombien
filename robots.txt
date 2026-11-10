@@ -1,5 +1,4 @@
 User-agent: *
 Allow: /
 
-# Replace the placeholder with the deployed absolute sitemap URL before publication.
-Sitemap: https://YOUR-DOMAIN.example/sitemap.xml
+Sitemap: https://speedcrafttv.github.io/WattCombien/sitemap.xml
