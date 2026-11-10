@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Replace https://YOUR-DOMAIN.example with the deployed site base URL before submission. -->
+  <url><loc>https://YOUR-DOMAIN.example/</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/pc-gaming.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/pc-24h.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/nas.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/console.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/televiseur.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/refrigerateur.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/box-internet.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/eclairage-led.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/simulateurs/veille.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/guides/calcul-consommation.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/guides/watts-et-kwh.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/guides/puissance-consommation-reelle.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/guides/cout-pc-gaming.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/guides/appareils-en-veille.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/guides/comparer-appareils.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/mentions-legales.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/confidentialite.html</loc></url>
+  <url><loc>https://YOUR-DOMAIN.example/pages/contact.html</loc></url>
+</urlset>

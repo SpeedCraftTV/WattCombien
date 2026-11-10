@@ -1,0 +1,2 @@
+# Add the exact authorization record issued by Google after AdSense approval.
+# Do not publish a made-up publisher ID or seller account.
