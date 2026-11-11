@@ -124,13 +124,14 @@ test("legal and contact pages publish the selected contact channel without fabri
   assert.match(legal, /qualification n’est pas confirmée/);
   assert.match(privacy, /article 13 du RGPD/);
   assert.match(privacy, /Cloudflare Pages Function/);
-  assert.doesNotMatch(privacy, /Cloudflare Worker/);
+  assert.match(privacy, /Worker Cloudflare privé/);
   assert.match(contact, /Le formulaire sécurisé est en préparation et ne transmet actuellement aucune donnée/);
 });
 
-test("the contact database migration denies public access and grants only Pages Function insertion", async () => {
+test("the contact database migration denies public access and grants only private Worker insertion", async () => {
   const migration = await readFile(path.join(root, "supabase", "migrations", "20261110000000_create_contact_messages.sql"), "utf8");
-  const worker = await readFile(path.join(root, "functions", "api", "contact.js"), "utf8");
+  const worker = await readFile(path.join(root, "workers", "contact-api", "src", "index.js"), "utf8");
+  const gateway = await readFile(path.join(root, "functions", "api", "contact.js"), "utf8");
   assert.match(migration, /enable row level security/i);
   assert.match(migration, /revoke all .* from public, anon, authenticated, service_role/i);
   assert.match(migration, /grant insert .* to service_role/i);
@@ -140,8 +141,11 @@ test("the contact database migration denies public access and grants only Pages 
   assert.match(worker, /return=minimal/);
   assert.match(worker, /secretKey\.startsWith\("eyJ"\)/);
   assert.match(worker, /rest\\\/v1\\\/\?\\?\$/);
-  assert.match(worker, /export async function onRequest/);
+  assert.match(worker, /export default/);
   assert.match(worker, /env\.TURNSTILE_SECRET/);
+  assert.match(worker, /env\.CONTACT_LIMITER\.limit/);
+  assert.match(gateway, /env\.CONTACT_API/);
+  assert.doesNotMatch(gateway, /SUPABASE_SECRET_KEY|TURNSTILE_SECRET|siteverify/);
 });
 
 test("contact messages use created_at while the migration preserves existing timestamps", async () => {

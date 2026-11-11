@@ -102,54 +102,82 @@ Pour voir les premières données, ouvrez **Cloudflare Dashboard → Web Analyti
 ## Configuration légale et confidentialité
 
 - L’adresse publique de contact et d’exercice des droits est `speedoutv.pro@gmail.com`. Les pages juridiques présentent WattCombien comme nom public et indiquent que le statut non professionnel n’est pas juridiquement confirmé.
-- `wattcombien.pages.dev` et sa Pages Function sont servis par Cloudflare Pages. Le workflow du dépôt publie aussi une version distincte via GitHub Pages à `speedcrafttv.github.io/WattCombien`; les mentions légales identifient le prestataire correspondant à chaque URL.
+- `wattcombien.pages.dev` et sa passerelle Pages sont servis par Cloudflare Pages. Le workflow du dépôt publie aussi une version distincte via GitHub Pages à `speedcrafttv.github.io/WattCombien`; les mentions légales identifient le prestataire correspondant à chaque URL.
 - L’exception d’anonymat de l’article 6, III, 2 de la LCEN ne peut être retenue qu’après vérification du statut non professionnel au vu de l’activité réelle, y compris le projet de monétisation, et après communication confidentielle des informations personnelles requises à l’hébergeur. Les mentions publiques ne remplacent pas cette démarche. L’identité requise du responsable au titre de l’article 13 du RGPD reste à vérifier avant toute collecte de données personnelles.
 - Le formulaire reste désactivé. Une durée maximale provisoire de 365 jours et des bases juridiques proposées sont préparées dans `js/config.js`, mais attendent l’approbation de l’éditeur. Le formulaire exige aussi `contact.legalSettingsApproved: true`. Aucun bandeau ou CMP n’est fourni dans le dépôt. Les modules AdSense, Clarity et Cloudflare Analytics attendent un signal CMP, mais toute injection automatique Cloudflare doit aussi être vérifiée dans le tableau de bord avant activation.
 
-## Formulaire de contact, Supabase et Cloudflare Pages Functions
+## Formulaire de contact, Supabase et Worker Cloudflare privé
 
-Le formulaire de `pages/contact.html` est désactivé par défaut. Il ne transmet aucune donnée tant que les services, les informations de confidentialité et la configuration frontale ne sont pas complétés. Son unique endpoint est `functions/api/contact.js`, servi par Cloudflare Pages à `/api/contact`. Il n’envoie pas de courriel de notification : les demandes reçues seront consultables dans la table Supabase par un administrateur autorisé. GitHub Pages ne prend pas en charge les Cloudflare Pages Functions.
+Le formulaire de `pages/contact.html` est désactivé par défaut. L’endpoint same-origin `/api/contact` est une passerelle Pages (`functions/api/contact.js`) qui transmet exclusivement au Worker privé `workers/contact-api/src/index.js` par le Service Binding `CONTACT_API`. Le Worker applique le limiteur, vérifie Turnstile et seul lui peut insérer dans Supabase. Il n’existe aucun fallback vers une insertion depuis Pages. GitHub Pages ne prend pas en charge les Cloudflare Pages Functions.
 
 ### 1. Créer et sécuriser la table Supabase
 
 1. Vérifiez d’abord l’état actuel de `public.contact_messages` avec les requêtes en lecture seule de `supabase/verification/contact_messages_readonly_checks.sql`. Faites une sauvegarde adaptée avant toute modification.
-2. Pour une base où la table existe déjà avec les statuts localisés signalés, ouvrez **Supabase Dashboard → SQL Editor → New query**, examinez puis exécutez manuellement uniquement `supabase/migrations/20261111001000_reconcile_contact_messages_schema.sql`. Elle est transactionnelle et s'arrête sur les colonnes inattendues, des données invalides, un déclencheur actif, une contrainte réutilisée sous une définition différente ou des privilèges effectifs résiduels. Elle ne retire que les contraintes CHECK dont l'expression correspond exactement à l'ancienne liste française de statuts; toutes les autres contraintes sont préservées. Elle convertit les statuts français vers `new`, `in_progress`, `closed`, ajoute les contraintes manquantes, rétablit les valeurs par défaut et limite les privilèges effectifs de `service_role` à INSERT. PostgreSQL 17 et versions ultérieures vérifient également explicitement le privilège `MAINTAIN`; les versions antérieures n'ont pas ce privilège. Les longueurs des champs texte comptent les points de code Unicode, comme `char_length` dans PostgreSQL. La base contrôle le caractère facultatif et la longueur de l’e-mail; son format reste validé par la Function. Ne réexécutez pas les migrations historiques simplement parce que `schema_migrations` est absent.
+2. Pour une base où la table existe déjà avec les statuts localisés signalés, ouvrez **Supabase Dashboard → SQL Editor → New query**, examinez puis exécutez manuellement uniquement `supabase/migrations/20261111001000_reconcile_contact_messages_schema.sql`. Elle est transactionnelle et s'arrête sur les colonnes inattendues, des données invalides, un déclencheur actif, une contrainte réutilisée sous une définition différente ou des privilèges effectifs résiduels. Elle ne retire que les contraintes CHECK dont l'expression correspond exactement à l'ancienne liste française de statuts; toutes les autres contraintes sont préservées. Elle convertit les statuts français vers `new`, `in_progress`, `closed`, ajoute les contraintes manquantes, rétablit les valeurs par défaut et limite les privilèges effectifs de `service_role` à INSERT. PostgreSQL 17 et versions ultérieures vérifient également explicitement le privilège `MAINTAIN`; les versions antérieures n'ont pas ce privilège. Les longueurs des champs texte comptent les points de code Unicode, comme `char_length` dans PostgreSQL. La base contrôle le caractère facultatif et la longueur de l’e-mail; son format reste validé par le Worker. Ne réexécutez pas les migrations historiques simplement parce que `schema_migrations` est absent.
 3. La migration historique `20261110000000_create_contact_messages.sql` puis le renommage `20261110220000_rename_contact_received_at_to_created_at.sql` restent inchangés. Ils ne constituent pas une preuve d’exécution historique et ne doivent pas être rejoués aveuglément sur une table déjà existante.
 4. Après l’exécution manuelle, relancez les requêtes de `supabase/verification/contact_messages_readonly_checks.sql`. Attendez-vous à RLS activé, aucune politique, absence de privilèges effectifs pour `anon` et `authenticated`, et INSERT uniquement pour `service_role` (y compris absence de `MAINTAIN` sur PostgreSQL 17 et ultérieur). Vérifiez le propriétaire, les privilèges effectifs, les rôles hérités et les déclencheurs. `service_role` peut posséder l'attribut Supabase `BYPASSRLS`; cela ne remplace pas les privilèges SQL de la table. La migration n'accepte pas qu'un rôle API puisse assumer le rôle propriétaire et s'annule si les privilèges effectifs après révocation ne correspondent pas à ces attentes.
-5. Copiez l’URL de base du projet, par exemple `https://PROJECT_REF.supabase.co`, sans ajouter `/rest/v1`. Créez ou récupérez une clé secrète Supabase et gardez-la uniquement dans les secrets Cloudflare Pages. Ne la placez jamais dans `js/config.js`, dans une page HTML ou dans une variable publique.
+5. Copiez l’URL de base du projet, par exemple `https://PROJECT_REF.supabase.co`, sans ajouter `/rest/v1`. La clé secrète Supabase ne doit être configurée que comme secret du Worker Preview, jamais dans les secrets Pages, `js/config.js`, une page HTML ou une variable publique.
 
 ### 2. Créer le widget Turnstile
 
-Dans **Cloudflare Dashboard → Turnstile → Add widget**, créez un widget géré et autorisez les domaines réellement utilisés, notamment `wattcombien.pages.dev` et, si nécessaire, `speedcrafttv.github.io` ou votre domaine personnalisé. La Site Key `0x4AAAAAAF7Td1S4Wd6MOzt-` est intégrée à la configuration publique. La clé secrète doit être enregistrée dans les secrets du projet Cloudflare Pages, sous le nom exact `TURNSTILE_SECRET`. La Function vérifie chaque jeton auprès de l’API Siteverify, ainsi que le hostname et l’action `contact`. La vérification côté navigateur seule ne constitue pas une protection.
+Dans **Cloudflare Dashboard → Turnstile → Add widget**, créez ou sélectionnez un widget géré et autorisez explicitement `test-contact.wattcombien.pages.dev`. La Site Key `0x4AAAAAAF7Td1S4Wd6MOzt-` est intégrée à la configuration publique. Le secret doit être enregistré uniquement dans les secrets du Worker Preview, sous le nom exact `TURNSTILE_SECRET`. Le Worker vérifie chaque jeton auprès de l’API Siteverify, ainsi que le hostname exact et l’action `contact`; la vérification côté navigateur seule ne constitue pas une protection.
 
-### 3. Déployer la Pages Function
+### 3. Préparer le Worker et les liaisons Preview
 
-La Function est dans `functions/api/contact.js`; Cloudflare Pages mappe ce chemin vers `/api/contact`. Le projet doit être publié par l’intégration Git Cloudflare Pages ou par un déploiement Pages qui inclut le dossier `functions`. Le workflow GitHub Pages de ce dépôt ne déploie pas cette API.
+Ne configurez que l’environnement Preview associé à `test-contact`; ne modifiez aucun réglage Production. La configuration versionnée du Worker est `workers/contact-api/wrangler.jsonc`. Elle désactive `workers.dev` et configure `CONTACT_LIMITER` à cinq requêtes par période de 60 secondes. Avant le premier déploiement manuel, vérifiez que son `namespace_id` est unique dans votre compte Cloudflare. Le binding de limitation de débit se déclare dans Wrangler; créer un Worker script depuis le tableau de bord seul ne suffit pas à lui fournir ce binding. Aucun Worker n’est déployé par ces changements.
 
-Dans **Cloudflare Dashboard → Workers & Pages → WattCombien → Settings → Variables and Secrets**, ajoutez ces variables pour les environnements Production et Preview selon le besoin :
+1. Déployez la branche `test-contact` en Preview et vérifiez l’URL d’alias `https://test-contact.wattcombien.pages.dev`.
+2. Dans **Workers & Pages → Create application → Create Worker**, créez le service `wattcombien-contact-preview` si nécessaire. Le code est dans `workers/contact-api/src/index.js`; le tableau de bord seul ne déclare pas le binding de limite de débit. Après autorisation explicite du déploiement, appliquez depuis la racine du dépôt la configuration Wrangler :
 
-| Nom | Type | Valeur |
+   ```sh
+   npx wrangler deploy --config workers/contact-api/wrangler.jsonc
+   ```
+
+   Cela configure `CONTACT_LIMITER` et garde `workers.dev` désactivé. N’ajoutez aucune route publique au Worker.
+3. Dans **Workers & Pages → WattCombien → Settings → Functions → Service bindings**, ajoutez uniquement en Preview un binding nommé `CONTACT_API` pointant vers `wattcombien-contact-preview`. Vérifiez que le contexte affiché est bien Preview avant d’enregistrer. Si l’interface ne permet pas de confirmer la portée Preview, arrêtez-vous et ne modifiez pas la configuration.
+4. Générez localement un secret aléatoire d’au moins 32 caractères. Ajoutez la même valeur comme secret `CONTACT_GATEWAY_TOKEN` dans les Variables and Secrets Preview de Pages et dans celles du Worker. Ne la mettez jamais dans le dépôt, une variable publique ou les journaux. Le Worker refuse les appels qui n’ont pas ce secret et la passerelle remplace les en-têtes du client par l’adresse `CF-Connecting-IP` reçue de Cloudflare.
+
+Configurez les valeurs suivantes dans les réglages du Worker `wattcombien-contact-preview`. Les secrets Supabase et Turnstile sont inutiles pour le test désactivé décrit ci-dessous; ne les ajoutez qu’à ce Worker, jamais à Pages. Pour le test désactivé, `CONTACT_GATEWAY_TOKEN` est le seul secret nécessaire.
+
+| Nom | Type | Valeur Preview |
 | --- | --- | --- |
-| `CONTACT_ENABLED` | Variable | `false` pendant la configuration, `true` uniquement après les essais |
-| `SUPABASE_URL` | Variable | URL HTTPS du projet, avec ou sans suffixe `/rest/v1` |
-| `TURNSTILE_EXPECTED_HOSTNAMES` | Variable | Hostnames exacts autorisés, séparés par des virgules |
-| `ALLOWED_ORIGINS` | Variable | Origines HTTPS exactes, séparées par des virgules. Pour le domaine public, saisir `https://wattcombien.pages.dev` sans crochets, parenthèses, chemin ni barre oblique finale. L’origine HTTPS identique à l’URL reçue par la Function est également acceptée automatiquement. |
-| `TURNSTILE_SECRET` | Secret | Secret Turnstile, jamais dans le dépôt |
-| `SUPABASE_SECRET_KEY` | Secret | Clé secrète Supabase, jamais dans le dépôt |
+| `CONTACT_ENABLED` | Variable | `false` |
+| `ALLOWED_ORIGINS` | Variable | `https://test-contact.wattcombien.pages.dev` |
+| `TURNSTILE_EXPECTED_HOSTNAMES` | Variable | `test-contact.wattcombien.pages.dev` |
+| `SUPABASE_URL` | Variable | URL HTTPS du projet de test Supabase |
+| `CONTACT_GATEWAY_TOKEN` | Secret | Même valeur aléatoire dans Worker et Pages Preview |
+| `TURNSTILE_SECRET` | Secret | Secret du widget autorisant le hostname Preview |
+| `SUPABASE_SECRET_KEY` | Secret | Clé du projet Supabase de test |
 
-4. Dans les réglages de build du projet Pages, utilisez la racine du dépôt comme répertoire de sortie (`.`), une commande de build vide et une version du système de build qui prend en charge les Functions. Si le projet utilise une autre méthode de déploiement, assurez-vous que le dossier `functions` est inclus à la racine du répertoire publié.
+Dans les réglages Pages Preview, configurez le secret `CONTACT_GATEWAY_TOKEN` et le binding `CONTACT_API`; n’y copiez pas les secrets Turnstile ou Supabase. Le frontend reste désactivé tant que `contact.enabled` et `contact.legalSettingsApproved` sont `false` dans `js/config.js`. Le Worker vérifie le limiteur avant `CONTACT_ENABLED`; lorsque celui-ci vaut `false`, il répond `503` sans analyser le corps et sans appeler Turnstile ni Supabase.
 
-5. Pour limiter les abus, créez et vérifiez dans Cloudflare une règle WAF de limitation de débit ciblant `POST /api/contact`, par exemple cinq requêtes par minute par adresse IP. La Function respecte aussi une liaison `CONTACT_LIMITER` si vous en configurez une dans le projet. Si aucun de ces deux mécanismes n’est actif, n’activez pas le formulaire.
+### 4. Tester le limiteur sans envoyer de message
 
-6. Déclenchez un nouveau déploiement Pages après l’ajout des variables et secrets afin qu’ils soient disponibles à la Function.
+1. Lancez `npm test` localement pour tester le Worker et la passerelle sans contacter de service externe.
+2. Après configuration manuelle et déploiement explicite des deux services, ouvrez la Preview authentifiée par Cloudflare Access. Dans la console du navigateur sur cette origine, envoyez six requêtes sans donnée personnelle :
 
-### 4. Activer le formulaire après les tests
+   ```js
+   const statuses = [];
+   for (let i = 0; i < 6; i++) {
+     const response = await fetch("/api/contact", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: "{}"
+     });
+     statuses.push(response.status);
+   }
+   console.log(statuses);
+   ```
 
-Dans `js/config.js`, `contact.turnstileSiteKey` contient déjà la Site Key fournie et `contact.apiUrl` vaut `/api/contact`. Pour le domaine Cloudflare Pages, conservez cette URL relative. Si le site est également servi sur GitHub Pages, configurez pour cette version une URL HTTPS complète pointant vers `https://wattcombien.pages.dev/api/contact`, et ajoutez `https://speedcrafttv.github.io` à `ALLOWED_ORIGINS`. Les champs `legal.contactRetentionDays: 365` et `legal.contactLegalBasis` sont des propositions, pas des choix validés. Après vérification des fondements, des durées, de la politique de confidentialité et des informations obligatoires du responsable, l’éditeur devra confirmer ces choix en passant `contact.legalSettingsApproved` à `true`. Le formulaire ne s’active que lorsque cet accord, la configuration des services et `contact.enabled: true` sont présents.
+   Avec un compteur frais et les six appels dans la même période de 60 secondes, les cinq premiers doivent répondre `503` (collecte désactivée) et le suivant `429` (limite dépassée). Le limiteur Cloudflare est approximatif et local au point de présence; attendez plus de 60 secondes avant un nouvel essai. Aucun appel Turnstile/Supabase ni aucune insertion ne doit avoir lieu. Si le résultat diffère, arrêtez et vérifiez le binding, l’adresse IP transmise, le secret interne et les journaux sans y publier de secrets.
 
-Pour diagnostiquer la garde d’origine en production, une requête `OPTIONS` same-origin doit répondre `204` et un `GET` same-origin `405` avec `Allow: POST, OPTIONS`. Un `GET` direct sans en-tête `Origin` peut répondre `403`. Dans **Workers & Pages → WattCombien → Settings → Variables and Secrets → Production**, vérifiez `ALLOWED_ORIGINS` à la valeur exacte `https://wattcombien.pages.dev`, sans barre finale, et contrôlez que les secrets et variables sont définis dans l’environnement Production. Puis, dans **Deployments**, vérifiez que le déploiement actif correspond à la branche `main` et au commit contenant `functions/api/contact.js`. Après tout changement de variable ou de code, redéployez. Un POST de forme correcte avec un jeton volontairement invalide ne doit jamais insérer de message; en fonctionnement configuré, il doit atteindre la vérification Turnstile et être rejeté avec `captcha_failed`. Une réponse `503` avant cette étape indique une configuration incomplète. Les journaux de la Function indiquent alors les noms des variables absentes ou invalides sans en afficher les valeurs. Les échecs Turnstile, Supabase et limiteur sont aussi journalisés par étape, sans enregistrer le contenu du message, l’adresse e-mail, les clés ou le jeton. Ne testez pas de jeton valide avant de confirmer l’ensemble des réglages.
+### 5. Activation ultérieure (non effectuée par cette préparation)
 
-`SUPABASE_URL` peut être l’URL de base comme `https://PROJECT_REF.supabase.co`, ou la même URL terminant par `/rest/v1`. La Function accepte les deux formats et construit `/rest/v1/contact_messages` une seule fois. La clé secrète Supabase récente est envoyée dans l’en-tête `apikey` côté serveur. Pour une ancienne clé JWT `service_role`, la Function ajoute aussi l’en-tête `Authorization: Bearer`. La migration corrective ne donne que le privilège direct `INSERT` à `service_role`, mais ce rôle reste privilégié et doit demeurer exclusivement côté serveur. Vérifiez ses privilèges effectifs, son propriétaire et ses appartenances avant tout test. La date `created_at` est définie par défaut en base, le code ne la fournit pas dans l’insertion.
+Cette préparation ne modifie ni `js/config.js`, ni `CONTACT_ENABLED=false`, ni les réglages Cloudflare. L’activation nécessiterait ultérieurement une validation technique et juridique distincte, puis des changements Preview explicitement approuvés. Ne réutilisez pas les secrets d’un projet Supabase de production pour un test.
+
+Dans `js/config.js`, `contact.turnstileSiteKey` contient déjà la Site Key fournie et `contact.apiUrl` vaut `/api/contact`; cette URL relative reste adaptée à Pages. Les champs `legal.contactRetentionDays: 365` et `legal.contactLegalBasis` sont des propositions, pas des choix validés. Le formulaire ne doit être activé qu’après validation des bases juridiques, durées, politique de confidentialité et informations obligatoires du responsable, et approbation explicite distincte.
+
+`SUPABASE_URL` peut être l’URL de base comme `https://PROJECT_REF.supabase.co`, ou la même URL terminant par `/rest/v1`. Le Worker accepte les deux formats et construit `/rest/v1/contact_messages` une seule fois. La clé secrète Supabase récente est envoyée dans l’en-tête `apikey` côté serveur. Pour une ancienne clé JWT `service_role`, le Worker ajoute aussi l’en-tête `Authorization: Bearer`. La migration corrective ne donne que le privilège direct `INSERT` à `service_role`, mais ce rôle reste privilégié et doit demeurer exclusivement côté serveur. Vérifiez ses privilèges effectifs, son propriétaire et ses appartenances avant tout test. La date `created_at` est définie par défaut en base, le code ne la fournit pas dans l’insertion.
 
 La migration ne crée pas ni ne consulte `supabase_migrations.schema_migrations`. L’absence de ce registre ne prouve pas l’absence d’exécution antérieure. Ne considérez la correction appliquée qu’après avoir exécuté manuellement la migration et vérifié ses effets avec les requêtes SQL en lecture seule fournies.
 
@@ -191,7 +219,8 @@ pages/
 css/styles.css
 js/             (calculs, interface, SEO, configuration, simulateurs)
                 (chargeurs AdSense, Clarity et Cloudflare soumis au consentement CMP)
-functions/      (API de contact Cloudflare Pages Functions, désactivée par défaut)
+functions/      (passerelle Pages vers le Worker de contact privé)
+workers/        (API privée de contact et configuration Wrangler)
 supabase/       (migration SQL de la table privée des messages)
 assets/favicon.svg
 tests/          (tests Node intégrés, sans dépendances)

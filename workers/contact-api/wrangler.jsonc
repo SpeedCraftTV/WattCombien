@@ -1,0 +1,18 @@
+{
+  "$schema": "https://developers.cloudflare.com/workers/wrangler/config-schema.json",
+  "name": "wattcombien-contact-preview",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-12",
+  "workers_dev": false,
+  "ratelimits": [
+    {
+      "name": "CONTACT_LIMITER",
+      // Confirm this namespace ID is unused in the Cloudflare account before deployment.
+      "namespace_id": "881204156",
+      "simple": {
+        "limit": 5,
+        "period": 60
+      }
+    }
+  ]
+}
