@@ -75,7 +75,8 @@ function updateMain() {
 
 for (const field of form.querySelectorAll("input")) field.addEventListener("input", updateMain);
 form.addEventListener("reset", () => requestAnimationFrame(() => { error.textContent = ""; updateMain(); }));
-$("#current-year").textContent = String(new Date().getFullYear());
+const currentYear = $("#current-year");
+if (currentYear) currentYear.textContent = String(new Date().getFullYear());
 
 const savedKey = "wattcombien.saved-estimates";
 $("#save-button").addEventListener("click", () => {

@@ -3,7 +3,7 @@ export const config = {
   // Change this base if the site is published on a custom domain.
   siteUrl: "https://wattcombien.pages.dev",
   adsense: {
-    enabled: true,
+    enabled: false,
     publisherId: "ca-pub-5689496403962976",
     slots: {}
   },

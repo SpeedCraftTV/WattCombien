@@ -18,10 +18,13 @@ for (const [property, content] of [
 }
 
 if (config.siteUrl && canonicalPath !== undefined) {
-  const canonical = document.createElement("link");
-  canonical.rel = "canonical";
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.append(canonical);
+  }
   canonical.href = new URL(canonicalPath, `${config.siteUrl.replace(/\/+$/, "")}/`).href;
-  document.head.append(canonical);
   const ogUrl = document.createElement("meta");
   ogUrl.setAttribute("property", "og:url");
   ogUrl.content = canonical.href;

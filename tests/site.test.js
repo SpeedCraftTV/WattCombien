@@ -17,7 +17,7 @@ async function htmlFiles(directory = root) {
   return files;
 }
 
-test("toutes les pages ont un titre unique et un seul H1", async () => {
+test("toutes les pages ont un titre unique, un seul H1 et un canonical statique correct", async () => {
   const files = await htmlFiles();
   const titles = new Map();
   for (const file of files) {
@@ -27,6 +27,10 @@ test("toutes les pages ont un titre unique et un seul H1", async () => {
     assert.equal((html.match(/<h1(?:\s|>)/gi) || []).length, 1, `${path.relative(root, file)} doit avoir un H1`);
     assert.match(html, /<meta\s+name="description"\s+content="[^"]+"/i, `${path.relative(root, file)} doit avoir une meta description`);
     assert.match(html, /<body\b[^>]*\bdata-canonical-path=/i, `${path.relative(root, file)} doit définir un chemin canonical configurable`);
+    const canonicalPath = html.match(/<body\b[^>]*\bdata-canonical-path="([^"]*)"/i)?.[1];
+    const canonicals = [...html.matchAll(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/gi)];
+    assert.equal(canonicals.length, 1, `${path.relative(root, file)} doit avoir un seul canonical statique`);
+    assert.equal(canonicals[0][1], new URL(canonicalPath, "https://wattcombien.pages.dev/").href);
     assert.ok(!titles.has(title), `Titre dupliqué : ${title}`);
     titles.set(title, file);
   }
@@ -57,10 +61,10 @@ test("chaque page publique charge une seule fois le garde CMP et aucun script ti
   assert.equal(adsTxt.trim(), "google.com, pub-5689496403962976, DIRECT, f08c47fec0942fa0");
 });
 
-test("AdSense remains configurable for future ads without loading before consent", async () => {
+test("AdSense remains disabled until a compliant CMP is configured", async () => {
   const config = await readFile(path.join(root, "js", "config.js"), "utf8");
   const loader = await readFile(path.join(root, "js", "adsense.js"), "utf8");
-  assert.match(config, /enabled:\s*true/);
+  assert.match(config, /adsense:\s*\{\s*enabled:\s*false/);
   assert.match(config, /publisherId:\s*"ca-pub-5689496403962976"/);
   assert.match(loader, /grantsAdsConsent\(tcData\)/);
   assert.match(loader, /adsbygoogle\.js\?client=\$\{encodeURIComponent\(config\.adsense\.publisherId\)\}/);
@@ -89,7 +93,7 @@ test("Cloudflare Web Analytics uses its configured token and loads once after CM
   assert.match(entry, /import "\.\/cloudflare-analytics\.js"/);
 });
 
-test("the contact form stays disabled until its public configuration and legal settings are complete", async () => {
+test("contact collection stays paused and the public Contact page uses email only", async () => {
   const config = await readFile(path.join(root, "js", "config.js"), "utf8");
   const loader = await readFile(path.join(root, "js", "contact-form.js"), "utf8");
   const page = await readFile(path.join(root, "pages", "contact.html"), "utf8");
@@ -101,13 +105,12 @@ test("the contact form stays disabled until its public configuration and legal s
   assert.match(loader, /config\.contact\.enabled/);
   assert.match(loader, /config\.contact\.legalSettingsApproved === true/);
   assert.match(loader, /config\.legal\.contactRetentionDays/);
-  assert.match(privacy, /proposition non encore validée/);
-  assert.match(privacy, /365 jours à compter de la réception/);
   assert.match(loader, /https:\/\/challenges\.cloudflare\.com\/turnstile\/v0\/api\.js/);
   assert.match(loader, /form\.checkValidity\(\)/);
   assert.match(loader, /turnstileToken = token/);
-  assert.match(page, /Le formulaire reste désactivé tant que la configuration des services/);
-  assert.match(page, /<fieldset id="contact-fields" disabled>/);
+  assert.doesNotMatch(page, /<form\b|contact-form\.js/i);
+  assert.match(page, /href="mailto:speedoutv\.pro@gmail\.com"/);
+  assert.match(privacy, /n’envoie pas de demande à Supabase ou à Turnstile/);
 });
 
 test("legal and contact pages publish the selected contact channel without fabricating publisher identity", async () => {
@@ -123,9 +126,10 @@ test("legal and contact pages publish the selected contact channel without fabri
   assert.match(legal, /article 6, III, 2/);
   assert.match(legal, /qualification n’est pas confirmée/);
   assert.match(privacy, /article 13 du RGPD/);
-  assert.match(privacy, /Cloudflare Pages Function/);
+  assert.match(privacy, /aucun formulaire de contact/);
+  assert.doesNotMatch(privacy, /Cloudflare Pages Function/);
   assert.doesNotMatch(privacy, /Cloudflare Worker/);
-  assert.match(contact, /Le formulaire sécurisé est en préparation et ne transmet actuellement aucune donnée/);
+  assert.match(contact, /ne propose actuellement aucun formulaire de contact/);
 });
 
 test("the contact database migration denies public access and grants only Pages Function insertion", async () => {
