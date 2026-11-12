@@ -73,6 +73,7 @@ test("AdSense remains disabled until a compliant CMP is configured", async () =>
 test("Clarity uses the configured project ID and loads asynchronously only from the CMP loader", async () => {
   const config = await readFile(path.join(root, "js", "config.js"), "utf8");
   const loader = await readFile(path.join(root, "js", "clarity.js"), "utf8");
+  assert.match(config, /clarity:\s*\{\s*enabled:\s*false/);
   assert.match(config, /projectId:\s*"zbctlkmftd"/);
   assert.match(loader, /script\.async\s*=\s*true/);
   assert.match(loader, /https:\/\/www\.clarity\.ms\/tag\/\$\{encodeURIComponent\(config\.clarity\.projectId\)\}/);
@@ -84,6 +85,7 @@ test("Cloudflare Web Analytics uses its configured token and loads once after CM
   const config = await readFile(path.join(root, "js", "config.js"), "utf8");
   const loader = await readFile(path.join(root, "js", "cloudflare-analytics.js"), "utf8");
   const entry = await readFile(path.join(root, "js", "adsense.js"), "utf8");
+  assert.match(config, /cloudflareAnalytics:\s*\{\s*enabled:\s*false/);
   assert.match(config, /token:\s*"f53bdf1fc5cd4b86925ed77fcefbf8a3"/);
   assert.match(loader, /https:\/\/static\.cloudflareinsights\.com\/beacon\.min\.js/);
   assert.match(loader, /script\.type\s*=\s*"module"/);
@@ -123,9 +125,13 @@ test("legal and contact pages publish the selected contact channel without fabri
     assert.deepEqual(emails, new Set(["speedoutv.pro@gmail.com"]), `${file} ne doit publier aucune autre adresse e-mail`);
     assert.doesNotMatch(html, /\btel:/i, `${file} ne doit publier aucun numéro de téléphone`);
   }
-  assert.match(legal, /article 6, III, 2/);
-  assert.match(legal, /qualification n’est pas confirmée/);
+  assert.match(legal, /article 1-1, II/);
+  assert.match(legal, /L’absence d’entreprise ou d’immatriculation ne suffit pas/);
+  assert.match(legal, /restent à confirmer/);
+  assert.doesNotMatch(legal, /article 6, III, 2/);
   assert.match(privacy, /article 13 du RGPD/);
+  assert.match(privacy, /Aucune CMP n’est actuellement installée/);
+  assert.match(privacy, /Sans signal de consentement TCF, le code du site ne charge pas Microsoft Clarity ni Cloudflare Web Analytics/);
   assert.match(privacy, /aucun formulaire de contact/);
   assert.doesNotMatch(privacy, /Cloudflare Pages Function/);
   assert.doesNotMatch(privacy, /Cloudflare Worker/);

@@ -8,11 +8,11 @@ export const config = {
     slots: {}
   },
   clarity: {
-    enabled: true,
+    enabled: false,
     projectId: "zbctlkmftd"
   },
   cloudflareAnalytics: {
-    enabled: true,
+    enabled: false,
     token: "f53bdf1fc5cd4b86925ed77fcefbf8a3"
   },
   contact: {
