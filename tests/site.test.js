@@ -20,19 +20,94 @@ async function htmlFiles(directory = root) {
 test("toutes les pages ont un titre unique, un seul H1 et un canonical statique correct", async () => {
   const files = await htmlFiles();
   const titles = new Map();
+  const descriptions = new Map();
   for (const file of files) {
     const html = await readFile(file, "utf8");
     const title = html.match(/<title>(.*?)<\/title>/is)?.[1]?.trim();
     assert.ok(title, `${path.relative(root, file)} doit avoir un titre`);
     assert.equal((html.match(/<h1(?:\s|>)/gi) || []).length, 1, `${path.relative(root, file)} doit avoir un H1`);
-    assert.match(html, /<meta\s+name="description"\s+content="[^"]+"/i, `${path.relative(root, file)} doit avoir une meta description`);
+    const description = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i)?.[1]?.trim();
+    assert.ok(description, `${path.relative(root, file)} doit avoir une meta description`);
     assert.match(html, /<body\b[^>]*\bdata-canonical-path=/i, `${path.relative(root, file)} doit définir un chemin canonical configurable`);
     const canonicalPath = html.match(/<body\b[^>]*\bdata-canonical-path="([^"]*)"/i)?.[1];
     const canonicals = [...html.matchAll(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/gi)];
     assert.equal(canonicals.length, 1, `${path.relative(root, file)} doit avoir un seul canonical statique`);
     assert.equal(canonicals[0][1], new URL(canonicalPath, "https://wattcombien.pages.dev/").href);
     assert.ok(!titles.has(title), `Titre dupliqué : ${title}`);
+    assert.ok(!descriptions.has(description), `Meta description dupliquée : ${description}`);
     titles.set(title, file);
+    descriptions.set(description, file);
+    const headingLevels = [...html.matchAll(/<h([1-6])(?:\s|>)/gi)].map((match) => Number(match[1]));
+    assert.equal(headingLevels[0], 1, `${path.relative(root, file)} doit commencer ses titres par H1`);
+    for (let index = 1; index < headingLevels.length; index += 1) {
+      assert.ok(headingLevels[index] <= headingLevels[index - 1] + 1, `${path.relative(root, file)} saute un niveau de titre`);
+    }
+  }
+});
+
+test("les balises Open Graph sont statiques, uniques et alignées sur les métadonnées canoniques", async () => {
+  const expectedProperties = ["og:type", "og:locale", "og:site_name", "og:title", "og:description", "og:url"];
+  for (const file of await htmlFiles()) {
+    const html = await readFile(file, "utf8");
+    const metadata = new Map([...html.matchAll(/<meta\s+property="(og:[^"]+)"\s+content="([^"]*)"/gi)].map((match) => [match[1], match[2]]));
+    const title = html.match(/<title>(.*?)<\/title>/is)?.[1]?.trim();
+    const description = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i)?.[1];
+    const canonical = html.match(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/i)?.[1];
+    for (const property of expectedProperties) {
+      const propertyCount = [...html.matchAll(/<meta\s+property="([^"]+)"/gi)].filter((match) => match[1] === property).length;
+      assert.equal(propertyCount, 1, `${path.relative(root, file)} doit contenir une balise ${property}`);
+    }
+    const relativePath = path.relative(root, file);
+    const expectedType = relativePath.startsWith(path.join("pages", "guides") + path.sep) ? "article" : "website";
+    assert.equal(metadata.get("og:type"), expectedType);
+    assert.equal(metadata.get("og:locale"), "fr_FR");
+    assert.equal(metadata.get("og:site_name"), "WattCombien");
+    assert.equal(metadata.get("og:title"), title);
+    assert.equal(metadata.get("og:description"), description);
+    assert.equal(metadata.get("og:url"), canonical);
+  }
+});
+
+test("le sitemap ne contient que les URL canoniques du site et robots.txt le référence", async () => {
+  const pages = await htmlFiles();
+  const canonicalUrls = [];
+  for (const file of pages) {
+    const html = await readFile(file, "utf8");
+    canonicalUrls.push(html.match(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/i)?.[1]);
+  }
+  const sitemap = await readFile(path.join(root, "sitemap.xml"), "utf8");
+  const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/gi)].map((match) => match[1]);
+  assert.equal(new Set(sitemapUrls).size, sitemapUrls.length, "Le sitemap ne doit pas répéter d’URL");
+  assert.deepEqual([...sitemapUrls].sort(), [...canonicalUrls].sort());
+  assert.ok(sitemapUrls.every((url) => url.startsWith("https://wattcombien.pages.dev/")));
+  for (const file of pages) {
+    const html = await readFile(file, "utf8");
+    assert.doesNotMatch(html, /<meta\s+name="robots"[^>]*content="[^"]*noindex/i, `${path.relative(root, file)} ne doit pas être exclue de l’indexation`);
+  }
+  const robots = await readFile(path.join(root, "robots.txt"), "utf8");
+  assert.match(robots, /^Sitemap:\s+https:\/\/wattcombien\.pages\.dev\/sitemap\.xml$/m);
+  assert.match(robots, /^Allow:\s+\/$/m);
+});
+
+test("les données structurées décrivent le site et les fils d’Ariane visibles", async () => {
+  for (const file of await htmlFiles()) {
+    const html = await readFile(file, "utf8");
+    const canonical = html.match(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/i)?.[1];
+    const blocks = [...html.matchAll(/<script\s+type="application\/ld\+json">([\s\S]*?)<\/script>/gi)]
+      .map((match) => JSON.parse(match[1]));
+    if (path.relative(root, file) === "index.html") {
+      const website = blocks.find((block) => block["@type"] === "WebSite");
+      assert.ok(website, "La page d’accueil doit déclarer WebSite");
+      assert.equal(website.name, "WattCombien");
+      assert.equal(website.url, "https://wattcombien.pages.dev/");
+      continue;
+    }
+    const breadcrumbs = blocks.find((block) => block["@type"] === "BreadcrumbList");
+    assert.ok(breadcrumbs, `${path.relative(root, file)} doit déclarer BreadcrumbList`);
+    const items = breadcrumbs.itemListElement;
+    assert.ok(items.length >= 2);
+    assert.deepEqual(items.map((item) => item.position), items.map((_, index) => index + 1));
+    assert.equal(items.at(-1).item, canonical);
   }
 });
 
@@ -195,4 +270,32 @@ test("tous les liens et ressources locaux existent et les fragments sont valides
     }
   }
   await Promise.all(checks);
+});
+
+test("les liens de navigation internes utilisent les URL canoniques Cloudflare", async () => {
+  const siteOrigin = "https://wattcombien.pages.dev";
+  for (const file of await htmlFiles()) {
+    const html = await readFile(file, "utf8");
+    const anchors = [...html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/gi)].map((match) => match[1]);
+    for (const href of anchors) {
+      if (href.startsWith("#") || /^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(href)) continue;
+      assert.fail(`${path.relative(root, file)} contient encore un lien relatif : ${href}`);
+    }
+    for (const href of anchors) {
+      if (href.startsWith("#") || /^(?:mailto:|tel:)/i.test(href)) continue;
+      const url = new URL(href, siteOrigin);
+      if (url.origin !== siteOrigin) continue;
+      let pathname = decodeURIComponent(url.pathname);
+      if (pathname.endsWith("/")) pathname += "index.html";
+      const target = path.resolve(root, pathname.slice(1));
+      await stat(target).catch((issue) => {
+        throw new Error(`${path.relative(root, file)}: canonical link "${href}" is broken (${issue.message})`);
+      });
+      if (url.hash && target.endsWith(".html")) {
+        const targetHtml = await readFile(target, "utf8");
+        const fragment = decodeURIComponent(url.hash.slice(1));
+        assert.ok(new RegExp(`\\bid="${fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).test(targetHtml), `${path.relative(root, file)}: missing #${fragment} in ${path.relative(root, target)}`);
+      }
+    }
+  }
 });

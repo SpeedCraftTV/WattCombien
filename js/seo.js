@@ -25,8 +25,11 @@ if (config.siteUrl && canonicalPath !== undefined) {
     document.head.append(canonical);
   }
   canonical.href = new URL(canonicalPath, `${config.siteUrl.replace(/\/+$/, "")}/`).href;
-  const ogUrl = document.createElement("meta");
-  ogUrl.setAttribute("property", "og:url");
+  let ogUrl = document.querySelector('meta[property="og:url"]');
+  if (!ogUrl) {
+    ogUrl = document.createElement("meta");
+    ogUrl.setAttribute("property", "og:url");
+    document.head.append(ogUrl);
+  }
   ogUrl.content = canonical.href;
-  document.head.append(ogUrl);
 }
