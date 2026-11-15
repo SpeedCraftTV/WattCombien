@@ -192,12 +192,59 @@ function addComparisonCard(device = { name: "Nouvel appareil", power: 100, hours
   const card = document.createElement("article");
   card.className = "compare-card";
   card.dataset.compareId = String(id);
-  card.innerHTML = `<div class="compare-card-head"><label for="compare-name-${id}">Appareil ${id}</label><button type="button" class="remove-device" aria-label="Supprimer l’appareil ${id}">×</button></div>
-    <input id="compare-name-${id}" data-key="name" type="text" maxlength="60" value="${device.name.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")}" aria-label="Nom de l’appareil ${id}">
-    <div class="compare-fields"><label>Puissance (W)<input data-key="power" type="number" min="0" max="1000000" step="any" value="${device.power}"></label><label>h/jour<input data-key="hours" type="number" min="0" max="24" step="any" value="${device.hours}"></label><label>j/semaine<input data-key="days" type="number" min="0" max="7" step="1" value="${device.days}"></label><label>Quantité<input data-key="quantity" type="number" min="1" max="10000" step="1" value="${device.quantity}"></label></div>
-    <div class="compare-cost"><span>Coût annuel estimé</span><strong>En attente</strong><small>En attente</small></div>`;
+  const header = document.createElement("div");
+  header.className = "compare-card-head";
+  const title = document.createElement("label");
+  title.htmlFor = `compare-name-${id}`;
+  title.textContent = `Appareil ${id}`;
+  const removeButton = document.createElement("button");
+  removeButton.type = "button";
+  removeButton.className = "remove-device";
+  removeButton.setAttribute("aria-label", `Supprimer l’appareil ${id}`);
+  removeButton.textContent = "×";
+  header.append(title, removeButton);
+
+  const nameInput = document.createElement("input");
+  nameInput.id = `compare-name-${id}`;
+  nameInput.dataset.key = "name";
+  nameInput.type = "text";
+  nameInput.maxLength = 60;
+  nameInput.value = device.name;
+  nameInput.setAttribute("aria-label", `Nom de l’appareil ${id}`);
+
+  const fields = document.createElement("div");
+  fields.className = "compare-fields";
+  for (const [key, labelText, min, max, step] of [
+    ["power", "Puissance (W)", "0", "1000000", "any"],
+    ["hours", "h/jour", "0", "24", "any"],
+    ["days", "j/semaine", "0", "7", "1"],
+    ["quantity", "Quantité", "1", "10000", "1"]
+  ]) {
+    const label = document.createElement("label");
+    label.append(document.createTextNode(labelText));
+    const input = document.createElement("input");
+    input.dataset.key = key;
+    input.type = "number";
+    input.min = min;
+    input.max = max;
+    input.step = step;
+    input.value = String(device[key]);
+    label.append(input);
+    fields.append(label);
+  }
+
+  const cost = document.createElement("div");
+  cost.className = "compare-cost";
+  const costLabel = document.createElement("span");
+  costLabel.textContent = "Coût annuel estimé";
+  const costValue = document.createElement("strong");
+  costValue.textContent = "En attente";
+  const costEnergy = document.createElement("small");
+  costEnergy.textContent = "En attente";
+  cost.append(costLabel, costValue, costEnergy);
+  card.append(header, nameInput, fields, cost);
   card.addEventListener("input", updateComparison);
-  $(".remove-device", card).addEventListener("click", () => { card.remove(); updateComparison(); });
+  removeButton.addEventListener("click", () => { card.remove(); updateComparison(); });
   comparisonList.append(card);
   updateComparison();
 }
@@ -236,7 +283,11 @@ function updateComparison() {
   }
   items.sort((a, b) => b.result.annualCost - a.result.annualCost);
   const leader = document.createElement("div");
-  leader.innerHTML = `<span>Le plus coûteux dans cette estimation</span><strong>${items[0].name || "Appareil sans nom"} · ${money(items[0].result.annualCost)} / an</strong>`;
+  const leaderLabel = document.createElement("span");
+  leaderLabel.textContent = "Le plus coûteux dans cette estimation";
+  const leaderValue = document.createElement("strong");
+  leaderValue.textContent = `${items[0].name || "Appareil sans nom"} · ${money(items[0].result.annualCost)} / an`;
+  leader.append(leaderLabel, leaderValue);
   summary.append(leader);
   const details = document.createElement("p");
   details.textContent = invalid ? "Corrigez les valeurs signalées pour inclure tous les appareils au classement." : items.length > 1 ? `Écart entre le plus et le moins coûteux : ${money(items[0].result.annualCost - items.at(-1).result.annualCost)} par an. L’économie théorique maximale en remplaçant le premier par le dernier est la même, si le service rendu est équivalent.` : "Ajoutez un second appareil pour connaître l’écart de coût.";

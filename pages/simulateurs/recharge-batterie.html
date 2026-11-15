@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="google-adsense-account" content="ca-pub-5689496403962976">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estimez le coût d’une recharge de voiture, vélo électrique, ordinateur, smartphone ou batterie externe selon la capacité, le rendement et votre prix du kWh.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="WattCombien">
+  <meta property="og:title" content="Calculateur de coût de recharge de batterie | WattCombien">
+  <meta property="og:description" content="Estimez le coût d’une recharge de voiture, vélo électrique, ordinateur, smartphone ou batterie externe selon la capacité, le rendement et votre prix du kWh.">
+  <meta property="og:url" content="https://wattcombien.pages.dev/pages/simulateurs/recharge-batterie.html">
+  <title>Calculateur de coût de recharge de batterie | WattCombien</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <script type="module" src="../../js/charging-calculator.js"></script>
+  <script type="module" src="../../js/adsense.js"></script>
+  <link rel="canonical" href="https://wattcombien.pages.dev/pages/simulateurs/recharge-batterie.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Accueil",
+        "item": "https://wattcombien.pages.dev/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Simulateurs",
+        "item": "https://wattcombien.pages.dev/pages/simulateurs/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Recharge de batterie",
+        "item": "https://wattcombien.pages.dev/pages/simulateurs/recharge-batterie.html"
+      }
+    ]
+  }
+  </script>
+</head>
+<body data-canonical-path="pages/simulateurs/recharge-batterie.html">
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a href="https://wattcombien.pages.dev/#calculateur">Calculateur</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/recharge-batterie.html" aria-current="page">Recharge</a>
+        <a href="https://wattcombien.pages.dev/#guides">Guides</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="content-main shell">
+    <article class="article">
+      <p class="breadcrumbs"><a href="https://wattcombien.pages.dev/">Accueil</a> / <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a> / Recharge de batterie</p>
+      <p class="eyebrow">SIMULATEUR DE RECHARGE</p>
+      <h1>Combien coûte une recharge de batterie ?</h1>
+      <p class="lead">Calculez l’énergie ajoutée, les pertes et le coût selon la capacité de votre batterie, les niveaux de charge et votre tarif électrique.</p>
+      <div class="callout"><strong>Les capacités proposées sont uniquement des exemples modifiables.</strong> Elles ne représentent pas les caractéristiques universelles d’une catégorie ou d’un modèle. Tous les champs, y compris ceux d’un exemple choisi, restent modifiables. Aucun prix d’électricité n’est prérempli.</div>
+
+      <form class="simulator-form panel charging-form" id="charging-form" novalidate>
+        <h2>Vos paramètres</h2>
+        <div class="charging-example">
+          <label for="category-example">Choisir une catégorie pour un exemple indicatif (facultatif)</label>
+          <select id="category-example" name="categoryExample">
+            <option value="">Choisir une catégorie</option>
+            <option value="car">Voiture électrique, exemple 60 kWh</option>
+            <option value="bike">Vélo électrique, exemple 500 Wh</option>
+            <option value="laptop">Ordinateur portable, exemple 60 Wh</option>
+            <option value="phone">Smartphone, exemple 15 Wh</option>
+            <option value="powerBank">Batterie externe, exemple 20 Wh</option>
+          </select>
+        </div>
+        <div class="field-grid">
+          <div>
+            <label for="battery-capacity">Capacité de la batterie</label>
+            <div class="input-wrap">
+              <input id="battery-capacity" name="capacity" type="number" min="0" max="1000000" step="any" required inputmode="decimal" aria-describedby="charging-error">
+              <select id="capacity-unit" name="capacityUnit" aria-label="Unité de capacité">
+                <option value="kWh">kWh</option>
+                <option value="Wh">Wh</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="initial-percent">Niveau initial de la batterie</label>
+            <div class="input-wrap"><input id="initial-percent" name="initialPercent" type="number" min="0" max="100" step="any" required inputmode="decimal" aria-describedby="charging-error"><span>%</span></div>
+          </div>
+          <div>
+            <label for="target-percent">Niveau souhaité après recharge</label>
+            <div class="input-wrap"><input id="target-percent" name="targetPercent" type="number" min="0" max="100" step="any" required inputmode="decimal" aria-describedby="charging-error"><span>%</span></div>
+          </div>
+          <div>
+            <label for="charging-efficiency">Rendement estimé de recharge</label>
+            <div class="input-wrap"><input id="charging-efficiency" name="efficiencyPercent" type="number" min="0.01" max="100" step="any" required inputmode="decimal" aria-describedby="charging-error"><span>%</span></div>
+          </div>
+          <div>
+            <label for="charging-price">Prix de l’électricité selon votre contrat</label>
+            <div class="input-wrap"><input id="charging-price" name="pricePerKwh" type="number" min="0" max="10000" step="any" required inputmode="decimal" aria-describedby="charging-error"><span>€/kWh</span></div>
+          </div>
+          <div>
+            <label for="charges-per-period">Nombre moyen de recharges</label>
+            <div class="input-wrap">
+              <input id="charges-per-period" name="chargesPerPeriod" type="number" min="0" max="10000" step="any" required inputmode="decimal" aria-describedby="charging-error">
+              <select id="charging-period" name="period" aria-label="Période de fréquence">
+                <option value="week">par semaine</option>
+                <option value="month">par mois</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <p id="charging-error" class="field-error" role="alert" aria-live="polite"></p>
+      </form>
+
+      <section class="panel charging-results" aria-labelledby="charging-results-title" aria-live="polite">
+        <h2 id="charging-results-title">Résultats estimés</h2>
+        <div class="charging-results-grid">
+          <div class="charging-result-card"><h3>Énergie ajoutée à la batterie</h3><strong id="energy-added">En attente</strong></div>
+          <div class="charging-result-card"><h3>Énergie prélevée sur le réseau</h3><strong id="grid-energy">En attente</strong></div>
+          <div class="charging-result-card"><h3>Énergie perdue pendant la recharge</h3><strong id="energy-loss">En attente</strong></div>
+          <div class="charging-result-card"><h3>Coût d’une recharge</h3><strong id="cost-per-charge">En attente</strong></div>
+          <div class="charging-result-card"><h3>Coût mensuel estimé</h3><strong id="monthly-cost">En attente</strong></div>
+          <div class="charging-result-card"><h3>Coût annuel estimé</h3><strong id="annual-cost">En attente</strong></div>
+        </div>
+      </section>
+
+      <details class="formula-details charging-formula">
+        <summary>Comment les résultats sont-ils calculés ?</summary>
+        <p>Énergie ajoutée = capacité en kWh × (niveau souhaité − niveau initial) ÷ 100.</p>
+        <p>Énergie prélevée sur le réseau = énergie ajoutée ÷ rendement. Les pertes sont la différence entre l’énergie prélevée et l’énergie ajoutée à la batterie.</p>
+        <p>Le coût d’une recharge = énergie prélevée × prix saisi du kWh. Pour annualiser une fréquence hebdomadaire, le calcul utilise 52 semaines par an ; une fréquence mensuelle est multipliée par 12. Le coût mensuel est le coût annuel divisé par 12.</p>
+        <p>Cette estimation ne tient pas compte des frais fixes, des variations de tarif, ni des limites de puissance ou de température. Le rendement varie selon l’équipement et les conditions de recharge : utilisez une estimation adaptée à votre usage.</p>
+      </details>
+
+      <h2>Adapter les valeurs à votre appareil</h2>
+      <p>La capacité utile peut différer de la capacité totale indiquée sur une batterie. Les niveaux de charge initiaux et souhaités doivent refléter votre recharge habituelle. Les exemples proposés servent uniquement à illustrer la saisie et ne remplacent pas les caractéristiques de votre appareil.</p>
+      <p>Le rendement représente la part de l’énergie prélevée qui est effectivement ajoutée à la batterie. Il varie selon le chargeur, l’appareil et les conditions de recharge. Remplacez-le par une valeur adaptée si vous la connaissez.</p>
+      <p>Pour estimer la consommation d’un appareil alimenté en continu, utilisez le <a href="https://wattcombien.pages.dev/#calculateur">calculateur général de consommation</a>.</p>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="shell footer-main">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <p>Calculs indicatifs selon les paramètres que vous renseignez.</p>
+      <nav aria-label="Informations">
+        <a href="https://wattcombien.pages.dev/pages/mentions-legales.html">Mentions légales</a>
+        <a href="https://wattcombien.pages.dev/pages/confidentialite.html">Confidentialité</a>
+        <a href="https://wattcombien.pages.dev/pages/contact.html">Contact</a>
+      </nav>
+    </div>
+    <div class="shell footer-bottom">
+      <span>© WattCombien</span>
+      <span>Outil gratuit, sans inscription.</span>
+    </div>
+  </footer>
+</body>
+</html>

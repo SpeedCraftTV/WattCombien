@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="google-adsense-account" content="ca-pub-5689496403962976">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estimez votre facture électrique mensuelle et annuelle en option Base ou heures pleines / heures creuses avec votre consommation et vos prix.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="WattCombien">
+  <meta property="og:title" content="Simulateur de facture électrique | WattCombien">
+  <meta property="og:description" content="Estimez votre facture électrique mensuelle et annuelle en option Base ou heures pleines / heures creuses avec votre consommation et vos prix.">
+  <meta property="og:url" content="https://wattcombien.pages.dev/pages/simulateurs/facture-electricite.html">
+  <title>Simulateur de facture électrique | WattCombien</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <script type="module" src="../../js/bill-simulator.js"></script>
+  <script type="module" src="../../js/adsense.js"></script>
+  <link rel="canonical" href="https://wattcombien.pages.dev/pages/simulateurs/facture-electricite.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://wattcombien.pages.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Simulateurs", "item": "https://wattcombien.pages.dev/pages/simulateurs/" },
+      { "@type": "ListItem", "position": 3, "name": "Facture électrique", "item": "https://wattcombien.pages.dev/pages/simulateurs/facture-electricite.html" }
+    ]
+  }
+  </script>
+</head>
+<body data-canonical-path="pages/simulateurs/facture-electricite.html">
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a href="https://wattcombien.pages.dev/#calculateur">Calculateur</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/facture-electricite.html" aria-current="page">Facture</a>
+        <a href="https://wattcombien.pages.dev/#guides">Guides</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="content-main shell">
+    <article class="article">
+      <p class="breadcrumbs"><a href="https://wattcombien.pages.dev/">Accueil</a> / <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a> / Facture électrique</p>
+      <p class="eyebrow">SIMULATEUR DE FACTURE</p>
+      <h1>Estimer sa facture d’électricité</h1>
+      <p class="lead">Estimez les montants mensuels et annuels à partir de votre consommation et des prix de votre contrat, en option Base ou heures pleines / heures creuses.</p>
+      <div class="callout"><strong>Il s’agit d’une estimation, pas d’une facture contractuelle.</strong> Aucun tarif n’est prérempli : renseignez les montants de votre contrat, de préférence toutes taxes comprises. Ajoutez uniquement les frais qui ne sont pas déjà inclus dans vos prix ou votre abonnement, afin d’éviter de les compter deux fois.</div>
+      <form class="simulator-form panel bill-form" id="bill-form" novalidate>
+        <h2>Vos paramètres</h2>
+        <p>Tous les champs sont obligatoires, sauf les frais supplémentaires.</p>
+        <div class="field-grid">
+          <div>
+            <label for="bill-consumption-input">Consommation électrique (kWh)</label>
+            <div class="input-wrap"><input id="bill-consumption-input" name="consumption" type="number" min="0" max="100000000" step="any" inputmode="decimal" required aria-describedby="bill-error"><select name="consumptionPeriod" aria-label="Période de consommation"><option value="month">par mois</option><option value="year">par an</option></select></div>
+          </div>
+          <div>
+            <label for="bill-tariff">Option tarifaire</label>
+            <div class="bill-select"><select id="bill-tariff" name="tariff"><option value="base">Base</option><option value="hp-hc">Heures pleines / heures creuses</option></select></div>
+          </div>
+        </div>
+        <div id="base-fields" class="field-grid">
+          <div>
+            <label for="bill-base-price">Prix du kWh en option Base (€/kWh)</label>
+            <div class="input-wrap"><input id="bill-base-price" name="basePrice" type="number" min="0" max="10000" step="any" inputmode="decimal" required aria-describedby="bill-error"><span>€/kWh</span></div>
+          </div>
+        </div>
+        <div id="hp-hc-fields" class="field-grid" hidden>
+          <div>
+            <label for="bill-peak-price">Prix en heures pleines (€/kWh)</label>
+            <div class="input-wrap"><input id="bill-peak-price" name="peakPrice" type="number" min="0" max="10000" step="any" inputmode="decimal" required disabled aria-describedby="bill-error"><span>€/kWh</span></div>
+          </div>
+          <div>
+            <label for="bill-off-peak-price">Prix en heures creuses (€/kWh)</label>
+            <div class="input-wrap"><input id="bill-off-peak-price" name="offPeakPrice" type="number" min="0" max="10000" step="any" inputmode="decimal" required disabled aria-describedby="bill-error"><span>€/kWh</span></div>
+          </div>
+          <div>
+            <label for="bill-off-peak-percent">Part de consommation en heures creuses (%)</label>
+            <div class="input-wrap"><input id="bill-off-peak-percent" name="offPeakPercent" type="number" min="0" max="100" step="any" inputmode="decimal" required disabled aria-describedby="bill-error"><span>%</span></div>
+          </div>
+        </div>
+        <div class="field-grid">
+          <div>
+            <label for="bill-subscription-input">Abonnement (€)</label>
+            <div class="input-wrap"><input id="bill-subscription-input" name="subscription" type="number" min="0" max="10000000" step="any" inputmode="decimal" required aria-describedby="bill-error"><select name="subscriptionPeriod" aria-label="Période de l’abonnement"><option value="month">par mois</option><option value="year">par an</option></select></div>
+          </div>
+          <div>
+            <label for="bill-fees-input">Frais fixes supplémentaires (€), facultatif</label>
+            <div class="input-wrap"><input id="bill-fees-input" name="extraFees" type="number" min="0" max="10000000" step="any" inputmode="decimal" aria-describedby="bill-error"><select name="extraFeesPeriod" aria-label="Période des frais supplémentaires"><option value="month">par mois</option><option value="year">par an</option></select></div>
+          </div>
+        </div>
+        <p>Les frais laissés vides valent 0 €. Ne saisissez aucun frais déjà inclus dans les autres montants. Aucune donnée personnelle n’est nécessaire ; les calculs restent dans votre navigateur.</p>
+        <p id="bill-error" class="field-error" role="alert"></p>
+      </form>
+
+      <section class="panel tariff-results bill-results" aria-labelledby="bill-results-title">
+        <h2 id="bill-results-title">Votre estimation</h2>
+        <div aria-live="polite">
+          <div class="tariff-results-grid">
+            <div class="tariff-result-card"><h3>Facture mensuelle moyenne</h3><strong id="bill-monthly">En attente</strong></div>
+            <div class="tariff-result-card"><h3>Facture annuelle</h3><strong id="bill-annual">En attente</strong></div>
+          </div>
+          <h3>Répartition annuelle des dépenses</h3>
+          <ul class="bill-breakdown">
+            <li><span>Consommation</span><strong id="bill-energy">En attente</strong><span id="bill-energy-share">En attente</span></li>
+            <li><span>Abonnement</span><strong id="bill-subscription">En attente</strong><span id="bill-subscription-share">En attente</span></li>
+            <li><span>Frais supplémentaires</span><strong id="bill-fees">En attente</strong><span id="bill-fees-share">En attente</span></li>
+          </ul>
+          <p>Les pourcentages indiquent la part de chaque poste dans le total annuel.</p>
+        </div>
+        <button class="button button-outline" id="bill-copy" type="button" disabled>Copier le résumé</button>
+        <p id="bill-copy-status" role="status" aria-live="polite"></p>
+      </section>
+      <details class="formula-details tariff-formula">
+        <summary>Comment est calculée cette estimation ?</summary>
+        <p>En option Base, le coût de consommation annuel est la consommation annuelle en kWh multipliée par le prix Base. En HP / HC, la consommation est répartie selon le pourcentage d’heures creuses et chaque part est multipliée par son prix respectif.</p>
+        <p>Les montants mensuels saisis sont multipliés par 12. Le total annuel additionne consommation, abonnement et frais supplémentaires. Le montant mensuel moyen correspond au total annuel divisé par 12 ; il ne représente pas nécessairement chaque facture mensuelle.</p>
+        <p>La part de chaque poste est calculée avant arrondi, en divisant son montant annuel par le total annuel. Si ce total est nul, les parts ne sont pas calculables.</p>
+      </details>
+      <h2>Quelles sont les limites de l’estimation ?</h2>
+      <p>La projection suppose que consommation et tarifs restent constants. Un mois réel peut varier selon les saisons, les relevés, les taxes, les changements de prix ou les modalités de facturation. L’outil n’ajoute automatiquement aucune taxe ni aucun frais : utilisez des montants cohérents et ne ressaisissez pas ceux qui sont déjà inclus.</p>
+      <p>Consultez votre contrat pour vos prix et votre abonnement, puis utilisez la part de consommation réellement effectuée en heures creuses, et non la proportion d’heures creuses dans la journée.</p>
+      <p>Pour comparer les deux options tarifaires, utilisez le <a href="https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses.html">comparateur Base et heures pleines / heures creuses</a>.</p>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="shell footer-main">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <p>Calculs indicatifs selon les paramètres que vous renseignez.</p>
+      <nav aria-label="Informations">
+        <a href="https://wattcombien.pages.dev/pages/mentions-legales.html">Mentions légales</a>
+        <a href="https://wattcombien.pages.dev/pages/confidentialite.html">Confidentialité</a>
+        <a href="https://wattcombien.pages.dev/pages/contact.html">Contact</a>
+      </nav>
+    </div>
+    <div class="shell footer-bottom">
+      <span>© WattCombien</span>
+      <span>Outil gratuit, sans inscription.</span>
+    </div>
+  </footer>
+</body>
+</html>

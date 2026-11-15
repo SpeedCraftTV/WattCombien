@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="google-adsense-account" content="ca-pub-5689496403962976">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Comparez le coût annuel de vos consommations en option Base ou heures pleines / heures creuses avec les prix et abonnements de votre contrat.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="WattCombien">
+  <meta property="og:title" content="Calculateur heures pleines / heures creuses | WattCombien">
+  <meta property="og:description" content="Comparez le coût annuel de vos consommations en option Base ou heures pleines / heures creuses avec les prix et abonnements de votre contrat.">
+  <meta property="og:url" content="https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses.html">
+  <title>Calculateur heures pleines / heures creuses | WattCombien</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <script type="module" src="../../js/time-of-use.js"></script>
+  <script type="module" src="../../js/adsense.js"></script>
+  <link rel="canonical" href="https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Accueil",
+        "item": "https://wattcombien.pages.dev/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Simulateurs",
+        "item": "https://wattcombien.pages.dev/pages/simulateurs/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": "Heures pleines / heures creuses",
+        "item": "https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses.html"
+      }
+    ]
+  }
+  </script>
+</head>
+<body data-canonical-path="pages/simulateurs/heures-pleines-creuses.html">
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a href="https://wattcombien.pages.dev/#calculateur">Calculateur</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses.html" aria-current="page">HP / HC</a>
+        <a href="https://wattcombien.pages.dev/#guides">Guides</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="content-main shell">
+    <article class="article">
+      <p class="breadcrumbs"><a href="https://wattcombien.pages.dev/">Accueil</a> / <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a> / Heures pleines / heures creuses</p>
+      <p class="eyebrow">COMPARAISON DE TARIFS</p>
+      <h1>Option Base ou heures pleines / heures creuses ?</h1>
+      <p class="lead">Comparez les deux options à partir de votre consommation annuelle, des prix et des abonnements indiqués dans votre contrat.</p>
+      <div class="callout"><strong>Aucun tarif n’est prérempli.</strong> Saisissez les prix applicables à votre contrat. Cette estimation n’intègre que l’énergie et les abonnements annuels renseignés ; elle ne remplace pas une facture.</div>
+
+      <form class="simulator-form panel tariff-form" id="time-of-use-form" novalidate>
+        <h2>Vos paramètres</h2>
+        <h3>Consommation et répartition</h3>
+        <div class="field-grid">
+          <div>
+            <label for="annual-kwh">Consommation annuelle</label>
+            <div class="input-wrap"><input id="annual-kwh" name="annualKwh" type="number" min="0" max="100000000" step="any" required inputmode="decimal" aria-describedby="time-of-use-error"><span>kWh/an</span></div>
+          </div>
+          <div>
+            <label for="off-peak-percent">Part consommée en heures creuses</label>
+            <div class="input-wrap"><input id="off-peak-percent" name="offPeakPercent" type="number" min="0" max="100" step="any" required inputmode="decimal" aria-describedby="time-of-use-error"><span>%</span></div>
+          </div>
+        </div>
+
+        <h3>Prix du kWh selon votre contrat</h3>
+        <div class="field-grid">
+          <div>
+            <label for="base-price">Prix en option Base</label>
+            <div class="input-wrap"><input id="base-price" name="basePrice" type="number" min="0" max="10000" step="any" required inputmode="decimal" aria-describedby="time-of-use-error"><span>€/kWh</span></div>
+          </div>
+          <div>
+            <label for="peak-price">Prix en heures pleines</label>
+            <div class="input-wrap"><input id="peak-price" name="peakPrice" type="number" min="0" max="10000" step="any" required inputmode="decimal" aria-describedby="time-of-use-error"><span>€/kWh</span></div>
+          </div>
+          <div>
+            <label for="off-peak-price">Prix en heures creuses</label>
+            <div class="input-wrap"><input id="off-peak-price" name="offPeakPrice" type="number" min="0" max="10000" step="any" required inputmode="decimal" aria-describedby="time-of-use-error"><span>€/kWh</span></div>
+          </div>
+        </div>
+
+        <h3>Abonnements annuels (facultatifs)</h3>
+        <div class="field-grid">
+          <div>
+            <label for="base-subscription">Abonnement annuel en option Base</label>
+            <div class="input-wrap"><input id="base-subscription" name="baseSubscription" type="number" min="0" max="10000000" step="any" inputmode="decimal" aria-describedby="time-of-use-error"><span>€/an</span></div>
+          </div>
+          <div>
+            <label for="tou-subscription">Abonnement annuel en option HP / HC</label>
+            <div class="input-wrap"><input id="tou-subscription" name="timeOfUseSubscription" type="number" min="0" max="10000000" step="any" inputmode="decimal" aria-describedby="time-of-use-error"><span>€/an</span></div>
+          </div>
+        </div>
+        <p class="contact-privacy">Un abonnement laissé vide est compté comme 0 €. Les calculs sont effectués dans votre navigateur.</p>
+        <p id="time-of-use-error" class="field-error" role="alert" aria-live="polite"></p>
+      </form>
+
+      <section class="panel tariff-results" aria-labelledby="results-title" aria-live="polite">
+        <h2 id="results-title">Résultats de la comparaison</h2>
+        <div class="tariff-results-grid">
+          <div class="tariff-result-card">
+            <h3>Option Base</h3>
+            <span>Coût annuel estimé</span>
+            <strong id="base-annual-cost">En attente</strong>
+          </div>
+          <div class="tariff-result-card">
+            <h3>Option heures pleines / heures creuses</h3>
+            <span>Coût annuel estimé</span>
+            <strong id="time-of-use-annual-cost">En attente</strong>
+          </div>
+        </div>
+        <p class="tariff-result-line"><strong>Écart annuel (HP / HC moins Base) :</strong> <span id="annual-difference">En attente</span></p>
+        <p class="tariff-result-line"><strong>Écart mensuel équivalent :</strong> <span id="monthly-difference">En attente</span></p>
+        <p id="cheaper-option" class="tariff-result-line" aria-live="polite">Renseignez les champs obligatoires pour comparer les options.</p>
+        <p class="tariff-result-line"><strong>Seuil de rentabilité en heures creuses :</strong> <span id="break-even-threshold">En attente</span></p>
+      </section>
+
+      <details class="formula-details tariff-formula">
+        <summary>Comment les résultats sont-ils calculés ?</summary>
+        <p>Base = consommation annuelle × prix Base + abonnement annuel Base.</p>
+        <p>HP / HC = consommation annuelle × (part HP × prix HP + part HC × prix HC) + abonnement annuel HP / HC.</p>
+        <p>L’écart est calculé comme HP / HC moins Base ; un montant négatif signifie que HP / HC est moins cher. L’écart mensuel est l’écart annuel divisé par 12.</p>
+        <p>Le seuil compare les deux coûts complets, abonnements inclus. Il n’est pas calculable si la consommation est nulle ou si les prix HP et HC sont identiques. Les valeurs sont calculées sans arrondi intermédiaire.</p>
+      </details>
+
+      <h2>Vérifiez les données de votre contrat</h2>
+      <p>La part en heures creuses doit représenter votre propre consommation, et non la durée quotidienne de la plage horaire. Vous pouvez la retrouver sur un relevé détaillé ou l’estimer à partir de vos usages et d’un suivi adapté.</p>
+      <p>Les tarifs, l’abonnement et les périodes tarifaires dépendent de votre offre. Reportez les montants de votre contrat et vérifiez que les périodes HP / HC prises en compte correspondent bien à celles qui s’appliquent à votre logement.</p>
+      <p>Pour détailler les postes d’une seule option, utilisez le <a href="https://wattcombien.pages.dev/pages/simulateurs/facture-electricite.html">simulateur de facture électrique</a>.</p>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="shell footer-main">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <p>Calculs indicatifs selon les paramètres que vous renseignez.</p>
+      <nav aria-label="Informations">
+        <a href="https://wattcombien.pages.dev/pages/mentions-legales.html">Mentions légales</a>
+        <a href="https://wattcombien.pages.dev/pages/confidentialite.html">Confidentialité</a>
+        <a href="https://wattcombien.pages.dev/pages/contact.html">Contact</a>
+      </nav>
+    </div>
+    <div class="shell footer-bottom">
+      <span>© WattCombien</span>
+      <span>Outil gratuit, sans inscription.</span>
+    </div>
+  </footer>
+</body>
+</html>

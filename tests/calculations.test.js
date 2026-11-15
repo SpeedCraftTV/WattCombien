@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculate, formatEuro } from "../js/calculations.js";
+import { calculate, calculateChargingCost, calculateElectricityBill, calculateTimeOfUse, formatEuro } from "../js/calculations.js";
 
 const approximately = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} should be within 1e-12 of ${expected}`);
 
@@ -25,6 +25,10 @@ test("7,2 kWh au tarif saisi de 0,20 €/kWh coûtent 1,44 €", () => {
   const result = calculate({ power: 300, hours: 24, days: 7, price: 0.2 });
   approximately(result.dailyCost, 1.44);
   assert.equal(formatEuro(result.dailyCost).replace(/[\u00a0\u202f]/g, " "), "1,44 €");
+});
+
+test("le format de prix peut conserver les fractions utiles aux petites batteries", () => {
+  assert.equal(formatEuro(0.0027, 4).replace(/[\u00a0\u202f]/g, " "), "0,0027 €");
 });
 
 test("zéro watt donne une consommation et un coût nuls", () => {
@@ -53,4 +57,252 @@ test("calcule sans arrondir les valeurs intermédiaires", () => {
 test("refuse les nombres non finis et les quantités non entières", () => {
   assert.throws(() => calculate({ power: Number.NaN, hours: 1, days: 7, price: 0.2 }), TypeError);
   assert.throws(() => calculate({ power: 1, hours: 1, days: 7, price: 0.2, quantity: 1.5 }), RangeError);
+});
+
+test("compare les coûts Base et heures creuses avec les abonnements annuels", () => {
+  const result = calculateTimeOfUse({
+    annualKwh: 6000,
+    basePrice: 0.2,
+    peakPrice: 0.23,
+    offPeakPrice: 0.15,
+    offPeakPercent: 40,
+    baseSubscription: 150,
+    timeOfUseSubscription: 180
+  });
+  assert.equal(result.annualBaseCost, 1350);
+  assert.equal(result.annualTimeOfUseCost, 1368);
+  assert.equal(result.annualDifference, 18);
+  assert.equal(result.monthlyDifference, 1.5);
+  approximately(result.breakEvenOffPeakPercent, 43.75);
+});
+
+test("calcule le seuil à zéro ou au-delà de 100 % selon les abonnements et tarifs", () => {
+  const alreadyWorthwhile = calculateTimeOfUse({
+    annualKwh: 1000, basePrice: 0.2, peakPrice: 0.25, offPeakPrice: 0.15,
+    offPeakPercent: 0, baseSubscription: 100, timeOfUseSubscription: 0
+  });
+  approximately(alreadyWorthwhile.breakEvenOffPeakPercent, -50);
+  assert.equal(alreadyWorthwhile.annualDifference, -50);
+
+  const unreachable = calculateTimeOfUse({
+    annualKwh: 1000, basePrice: 0.2, peakPrice: 0.3, offPeakPrice: 0.25,
+    offPeakPercent: 100
+  });
+  assert.equal(unreachable.breakEvenOffPeakPercent, 200);
+  assert.equal(unreachable.annualDifference, 50);
+});
+
+test("retourne aucun seuil quand la consommation est nulle ou les tarifs HP et HC égaux", () => {
+  const noConsumption = calculateTimeOfUse({
+    annualKwh: 0, basePrice: 0.2, peakPrice: 0.3, offPeakPrice: 0.1,
+    offPeakPercent: 50, baseSubscription: 120, timeOfUseSubscription: 100
+  });
+  assert.equal(noConsumption.annualBaseCost, 120);
+  assert.equal(noConsumption.annualTimeOfUseCost, 100);
+  assert.equal(noConsumption.breakEvenOffPeakPercent, null);
+
+  const identicalRates = calculateTimeOfUse({
+    annualKwh: 4000, basePrice: 0.2, peakPrice: 0.2, offPeakPrice: 0.2,
+    offPeakPercent: 50
+  });
+  assert.equal(identicalRates.breakEvenOffPeakPercent, null);
+});
+
+test("accepte les limites de 0 et 100 % et les abonnements omis", () => {
+  const zero = calculateTimeOfUse({
+    annualKwh: 1000, basePrice: 0.2, peakPrice: 0.2, offPeakPrice: 0.1,
+    offPeakPercent: 0
+  });
+  const full = calculateTimeOfUse({
+    annualKwh: 1000, basePrice: 0.2, peakPrice: 0.3, offPeakPrice: 0.1,
+    offPeakPercent: 100
+  });
+  assert.equal(zero.annualBaseCost, 200);
+  assert.equal(zero.annualTimeOfUseCost, 200);
+  assert.equal(full.annualTimeOfUseCost, 100);
+});
+
+test("calcule un seuil maximal lorsque le prix HC dépasse le prix HP", () => {
+  const result = calculateTimeOfUse({
+    annualKwh: 1000,
+    basePrice: 0.2,
+    peakPrice: 0.15,
+    offPeakPrice: 0.25,
+    offPeakPercent: 0
+  });
+  assert.equal(result.annualDifference, -50);
+  approximately(result.breakEvenOffPeakPercent, 50);
+});
+
+test("rejette les consommations, tarifs et parts HP/HC invalides", () => {
+  const valid = {
+    annualKwh: 1000, basePrice: 0.2, peakPrice: 0.3, offPeakPrice: 0.1,
+    offPeakPercent: 50
+  };
+  assert.throws(() => calculateTimeOfUse({ ...valid, annualKwh: -1 }), RangeError);
+  for (const key of ["basePrice", "peakPrice", "offPeakPrice", "baseSubscription", "timeOfUseSubscription"]) {
+    assert.throws(() => calculateTimeOfUse({ ...valid, [key]: -0.1 }), RangeError);
+  }
+  assert.throws(() => calculateTimeOfUse({ ...valid, offPeakPercent: 100.1 }), RangeError);
+  assert.throws(() => calculateTimeOfUse({ ...valid, offPeakPercent: Number.NaN }), TypeError);
+  assert.throws(() => calculateTimeOfUse({ ...valid, timeOfUseSubscription: Number.POSITIVE_INFINITY }), TypeError);
+  assert.throws(() => calculateTimeOfUse({
+    ...valid, annualKwh: Number.MAX_VALUE, peakPrice: Number.MAX_VALUE
+  }), RangeError);
+});
+
+test("calcule l’énergie prélevée, les pertes et les coûts d’une recharge de voiture", () => {
+  const result = calculateChargingCost({
+    capacity: 60,
+    capacityUnit: "kWh",
+    initialPercent: 20,
+    targetPercent: 80,
+    pricePerKwh: 0.2,
+    efficiencyPercent: 90,
+    chargesPerPeriod: 2,
+    period: "week"
+  });
+  assert.equal(result.capacityKwh, 60);
+  assert.equal(result.energyAddedKwh, 36);
+  assert.equal(result.gridEnergyKwh, 40);
+  approximately(result.energyLossKwh, 4);
+  assert.equal(result.costPerCharge, 8);
+  approximately(result.monthlyCost, 69.33333333333333);
+  assert.equal(result.annualCost, 832);
+});
+
+test("convertit les Wh et annualise une fréquence mensuelle", () => {
+  const result = calculateChargingCost({
+    capacity: 500,
+    capacityUnit: "Wh",
+    initialPercent: 10,
+    targetPercent: 80,
+    pricePerKwh: 0.4,
+    efficiencyPercent: 70,
+    chargesPerPeriod: 3,
+    period: "month"
+  });
+  assert.equal(result.capacityKwh, 0.5);
+  approximately(result.energyAddedKwh, 0.35);
+  approximately(result.gridEnergyKwh, 0.5);
+  approximately(result.energyLossKwh, 0.15);
+  assert.equal(result.costPerCharge, 0.2);
+  assert.equal(result.monthlyCost, 0.6);
+  assert.equal(result.annualCost, 7.2);
+});
+
+test("gère les limites de rendement, les recharges nulles et une fréquence nulle", () => {
+  const noLoss = calculateChargingCost({
+    capacity: 20,
+    capacityUnit: "kWh",
+    initialPercent: 50,
+    targetPercent: 50,
+    pricePerKwh: 0.3,
+    efficiencyPercent: 100,
+    chargesPerPeriod: 0,
+    period: "month"
+  });
+  assert.equal(noLoss.energyAddedKwh, 0);
+  assert.equal(noLoss.gridEnergyKwh, 0);
+  assert.equal(noLoss.energyLossKwh, 0);
+  assert.equal(noLoss.costPerCharge, 0);
+  assert.equal(noLoss.monthlyCost, 0);
+  assert.equal(noLoss.annualCost, 0);
+});
+
+test("rejette les valeurs de recharge hors limites et les résultats non finis", () => {
+  const valid = {
+    capacity: 10,
+    capacityUnit: "kWh",
+    initialPercent: 20,
+    targetPercent: 80,
+    pricePerKwh: 0.2,
+    efficiencyPercent: 90,
+    chargesPerPeriod: 1,
+    period: "week"
+  };
+  for (const patch of [
+    { capacity: 0 },
+    { capacity: -1 },
+    { initialPercent: -1 },
+    { initialPercent: 101 },
+    { targetPercent: 19 },
+    { targetPercent: 101 },
+    { pricePerKwh: -0.1 },
+    { efficiencyPercent: 0 },
+    { efficiencyPercent: 100.1 },
+    { chargesPerPeriod: -1 },
+    { capacityUnit: "MWh" },
+    { period: "day" }
+  ]) {
+    assert.throws(() => calculateChargingCost({ ...valid, ...patch }), RangeError);
+  }
+  assert.throws(() => calculateChargingCost({ ...valid, pricePerKwh: Number.NaN }), TypeError);
+  assert.throws(() => calculateChargingCost({ ...valid, capacity: Number.MAX_VALUE }), RangeError);
+});
+
+test("facture Base : annualise séparément consommation, abonnement et frais", () => {
+  const result = calculateElectricityBill({
+    consumption: 200, consumptionPeriod: "month", tariff: "base", basePrice: 0.25,
+    subscription: 120, subscriptionPeriod: "year", extraFees: 5, extraFeesPeriod: "month"
+  });
+  assert.equal(result.annualEnergyCost, 600);
+  assert.equal(result.annualSubscription, 120);
+  assert.equal(result.annualExtraFees, 60);
+  assert.equal(result.annualTotal, 780);
+  assert.equal(result.monthlyTotal, 65);
+  approximately(result.energyShare, 600 / 780 * 100);
+  approximately(result.subscriptionShare, 120 / 780 * 100);
+  approximately(result.extraFeesShare, 60 / 780 * 100);
+});
+
+test("facture HP/HC : applique la répartition à la consommation annuelle", () => {
+  const result = calculateElectricityBill({
+    consumption: 6000, consumptionPeriod: "year", tariff: "hp-hc",
+    peakPrice: 0.25, offPeakPrice: 0.15, offPeakPercent: 40,
+    subscription: 15, subscriptionPeriod: "month", extraFeesPeriod: "year"
+  });
+  assert.equal(result.annualEnergyCost, 1260);
+  assert.equal(result.annualSubscription, 180);
+  assert.equal(result.annualExtraFees, 0);
+  assert.equal(result.annualTotal, 1440);
+  assert.equal(result.monthlyTotal, 120);
+  for (const share of [0, 100]) {
+    const boundary = calculateElectricityBill({
+      consumption: 1000, consumptionPeriod: "year", tariff: "hp-hc",
+      peakPrice: 0.25, offPeakPrice: 0.15, offPeakPercent: share,
+      subscription: 0, subscriptionPeriod: "year", extraFeesPeriod: "year"
+    });
+    assert.equal(boundary.annualEnergyCost, share === 0 ? 250 : 150);
+  }
+});
+
+test("facture nulle : les parts sont indéterminées, sans division par zéro", () => {
+  const result = calculateElectricityBill({
+    consumption: 0, consumptionPeriod: "year", tariff: "base", basePrice: 0,
+    subscription: 0, subscriptionPeriod: "month", extraFeesPeriod: "month"
+  });
+  assert.equal(result.annualTotal, 0);
+  assert.equal(result.monthlyTotal, 0);
+  assert.equal(result.energyShare, null);
+  assert.equal(result.subscriptionShare, null);
+  assert.equal(result.extraFeesShare, null);
+});
+
+test("facture : rejette les valeurs non finies, négatives, périodes et répartitions invalides", () => {
+  const valid = {
+    consumption: 100, consumptionPeriod: "year", tariff: "hp-hc",
+    peakPrice: 0.25, offPeakPrice: 0.15, offPeakPercent: 40,
+    subscription: 10, subscriptionPeriod: "month", extraFees: 1, extraFeesPeriod: "year"
+  };
+  for (const patch of [
+    { consumption: -1 }, { subscription: -1 }, { extraFees: -1 },
+    { peakPrice: -1 }, { offPeakPrice: -1 }, { offPeakPercent: -1 }, { offPeakPercent: 101 },
+    { consumptionPeriod: "week" }, { subscriptionPeriod: "week" }, { extraFeesPeriod: "week" },
+    { tariff: "other" }, { consumption: Number.MAX_VALUE, consumptionPeriod: "month" }
+  ]) {
+    assert.throws(() => calculateElectricityBill({ ...valid, ...patch }), RangeError);
+  }
+  assert.throws(() => calculateElectricityBill({ ...valid, peakPrice: NaN }), TypeError);
+  assert.throws(() => calculateElectricityBill({ ...valid, tariff: "base", basePrice: -1 }), RangeError);
 });

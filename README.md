@@ -7,7 +7,7 @@ Site statique francophone pour estimer et comparer la consommation électrique d
 - Calculateur principal : consommation moyenne journalière, hebdomadaire, sur 30 jours et annuelle, coût aux mêmes périodes, graphique accessible, CSV, copie et partage par URL.
 - Comparateur multi-appareils avec classement annuel, écart et économie théorique maximale si le service rendu est équivalent.
 - Enregistrement local explicitement déclenché par l’utilisateur (20 simulations au maximum) ; thème clair/sombre mémorisé si le navigateur l’autorise.
-- Neuf simulateurs dédiés et six guides éditoriaux.
+- Neuf simulateurs par appareil, un comparateur Base / heures pleines-heures creuses, un calculateur de recharge de batterie, un simulateur de facture électrique et six guides éditoriaux.
 - Pages Mentions légales, Confidentialité et Contact à relire et compléter avant lancement.
 - Sitemap et robots.txt à personnaliser avec l’URL publique.
 - AdSense et Microsoft Clarity sont configurés. Leurs scripts tiers ne se chargent qu’après les choix CMP requis. Aucune police externe n’est chargée.
@@ -23,6 +23,12 @@ semaine = moyenne journalière × 7
 mois estimé = moyenne journalière × 30
 année estimée = moyenne journalière × 365
 ```
+
+Le comparateur Base / heures pleines-heures creuses utilise les prix et abonnements saisis par le visiteur. Il calcule la consommation HP et HC selon la part indiquée, puis le seuil de rentabilité en tenant compte des abonnements lorsque la consommation est non nulle et que les prix HP et HC diffèrent. Les abonnements laissés vides comptent comme zéro ; aucun tarif n’est prérempli.
+
+Le calculateur de recharge convertit la capacité saisie en kWh, calcule l’énergie ajoutée entre les deux niveaux de charge, puis l’énergie prélevée sur le réseau selon le rendement. Les coûts utilisent le prix du kWh renseigné et le nombre de recharges déclaré. Une fréquence hebdomadaire est annualisée sur 52 semaines ; une fréquence mensuelle sur 12 mois. Les capacités des exemples par catégorie sont modifiables et ne sont pas des caractéristiques universelles.
+
+Le simulateur de facture utilise les prix Base ou HP/HC renseignés, la consommation, l’abonnement et les éventuels frais fixes supplémentaires. Chaque montant mensuel est annualisé sur 12 mois ; les totaux mensuels sont des moyennes annuelles. Les parts des postes ne sont pas calculables si le total est nul. Aucune taxe ou autre frais n’est ajouté automatiquement : les montants saisis doivent être cohérents et ne pas inclure deux fois les mêmes frais. L’estimation ne modélise ni variations saisonnières ni changements tarifaires et ne constitue pas une facture contractuelle.
 
 Le calcul suppose une puissance constante pendant les heures saisies. Pour un équipement cyclique ou variable, entrez une puissance moyenne mesurée ou faites un calcul par état. Les valeurs d’exemple sont indicatives et modifiables ; elles ne sont ni des mesures universelles ni des tarifs recommandés. Le prix utilisé est celui saisi, sans estimation de taxes, abonnement ou variation tarifaire. Les valeurs ne sont arrondies que pour l’affichage.
 
@@ -183,7 +189,7 @@ La configuration centrale est dans `js/config.js`. L’identifiant `ca-pub-56894
 ```text
 index.html
 pages/
-  simulateurs/  (index + 9 calculateurs)
+  simulateurs/  (index, calculateurs et simulateurs)
   guides/       (6 guides)
   mentions-legales.html
   confidentialite.html

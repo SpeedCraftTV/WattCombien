@@ -108,6 +108,11 @@ test("les données structurées décrivent le site et les fils d’Ariane visibl
     assert.ok(items.length >= 2);
     assert.deepEqual(items.map((item) => item.position), items.map((_, index) => index + 1));
     assert.equal(items.at(-1).item, canonical);
+    const breadcrumbMarkup = html.match(/<p class="breadcrumbs">([\s\S]*?)<\/p>/i)?.[1];
+    const visibleBreadcrumb = breadcrumbMarkup?.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+    assert.equal(items.map((item) => item.name).join(" / "), visibleBreadcrumb, `${path.relative(root, file)} : le fil JSON-LD doit correspondre au fil visible`);
+    const visibleLinks = [...breadcrumbMarkup.matchAll(/<a\b[^>]*\bhref="([^"]+)"/gi)].map((match) => match[1]);
+    assert.deepEqual(items.map((item) => item.item), [...visibleLinks, canonical], `${path.relative(root, file)} : les URL JSON-LD doivent correspondre aux liens visibles`);
   }
 });
 
@@ -116,6 +121,89 @@ test("les textes HTML et les chaînes de l’interface ne contiennent pas de tir
   for (const file of files) {
     const text = await readFile(file, "utf8");
     assert.doesNotMatch(text, /[—–]/, `${path.relative(root, file)} contient un tiret long`);
+  }
+});
+
+test("le comparateur n’insère pas les valeurs des visiteurs comme du HTML", async () => {
+  const app = await readFile(path.join(root, "js", "app.js"), "utf8");
+  assert.doesNotMatch(app, /\.innerHTML\s*=|\.insertAdjacentHTML\s*\(/);
+  assert.match(app, /nameInput\.value = device\.name/);
+  assert.match(app, /leaderValue\.textContent = `\$\{items\[0\]\.name/);
+});
+
+test("la navigation mobile conserve ses liens et les rend lisibles", async () => {
+  const styles = await readFile(path.join(root, "css", "styles.css"), "utf8");
+  assert.doesNotMatch(styles, /\.main-nav a:nth-child\(3\)\s*\{\s*display:\s*none\s*;/);
+  assert.match(styles, /\.main-nav \{ order: 3; flex: 1 0 100%; justify-content: space-between;/);
+  assert.match(styles, /\.main-nav a \{ min-height: 36px; display: inline-flex; align-items: center; font-size: 11px; \}/);
+  assert.match(styles, /\.eyebrow, \.hero-note, \.trust-strip>div,[\s\S]*?\.breadcrumbs \{ font-size: 12px; \}/);
+});
+
+test("le simulateur HP/HC est relié au site et ne préremplit aucun tarif", async () => {
+  const page = await readFile(path.join(root, "pages", "simulateurs", "heures-pleines-creuses.html"), "utf8");
+  const homepage = await readFile(path.join(root, "index.html"), "utf8");
+  const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
+  assert.match(homepage, /pages\/simulateurs\/heures-pleines-creuses\.html/);
+  assert.match(simulators, /pages\/simulateurs\/heures-pleines-creuses\.html/);
+  for (const name of ["annualKwh", "basePrice", "peakPrice", "offPeakPrice", "offPeakPercent"]) {
+    const input = page.match(new RegExp(`<input\\b(?=[^>]*\\bname="${name}")[^>]*>`))?.[0];
+    assert.ok(input, `${name} doit être présent`);
+    assert.match(input, /\brequired\b/);
+    assert.doesNotMatch(input, /\bvalue=/);
+  }
+  assert.match(page, /name="baseSubscription"[^>]*inputmode="decimal"/);
+  assert.match(page, /name="timeOfUseSubscription"[^>]*inputmode="decimal"/);
+  assert.match(page, /adsense\.js/);
+});
+
+test("le calculateur de recharge est listé, accessible et ses valeurs d’exemple sont explicites", async () => {
+  const page = await readFile(path.join(root, "pages", "simulateurs", "recharge-batterie.html"), "utf8");
+  const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
+  assert.match(simulators, /pages\/simulateurs\/recharge-batterie\.html/);
+  assert.match(page, /charging-calculator\.js/);
+  assert.match(page, /Les capacités proposées sont uniquement des exemples modifiables/);
+  for (const name of ["capacity", "initialPercent", "targetPercent", "efficiencyPercent", "pricePerKwh", "chargesPerPeriod"]) {
+    const input = page.match(new RegExp(`<input\\b(?=[^>]*\\bname="${name}")[^>]*>`))?.[0];
+    assert.ok(input, `${name} doit être présent`);
+    assert.match(input, /\brequired\b/);
+    assert.doesNotMatch(input, /\bvalue=/);
+    assert.match(input, /aria-describedby="charging-error"/);
+  }
+  for (const category of ["car", "bike", "laptop", "phone", "powerBank"]) {
+    assert.match(page, new RegExp(`<option value="${category}">`));
+  }
+  assert.match(page, /id="charging-error" class="field-error" role="alert"/);
+  assert.match(page, /class="panel charging-results"[^>]*aria-live="polite"/);
+});
+
+test("le simulateur de facture est relié au site et ne préremplit aucun tarif", async () => {
+  const page = await readFile(path.join(root, "pages", "simulateurs", "facture-electricite.html"), "utf8");
+  const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
+  assert.match(simulators, /pages\/simulateurs\/facture-electricite\.html/);
+  assert.match(page, /bill-simulator\.js/);
+  for (const name of ["consumption", "basePrice", "peakPrice", "offPeakPrice", "offPeakPercent", "subscription"]) {
+    const input = page.match(new RegExp(`<input\\b(?=[^>]*\\bname="${name}")[^>]*>`))?.[0];
+    assert.ok(input, `${name} doit être présent`);
+    assert.match(input, /\brequired\b/);
+    assert.doesNotMatch(input, /\bvalue=/);
+    assert.match(input, /aria-describedby="bill-error"/);
+  }
+  assert.match(page, /id="bill-error" class="field-error" role="alert"/);
+  assert.match(page, /aria-live="polite"/);
+  assert.match(page, /id="bill-copy" type="button" disabled/);
+});
+
+test("les pages relient les outils complémentaires depuis leur contenu", async () => {
+  for (const [file, target] of [
+    ["facture-electricite.html", "pages/simulateurs/heures-pleines-creuses.html"],
+    ["heures-pleines-creuses.html", "pages/simulateurs/facture-electricite.html"],
+    ["recharge-batterie.html", "#calculateur"],
+    ["pc-gaming.html", "#comparateur"],
+    ["veille.html", "pages/simulateurs/facture-electricite.html"]
+  ]) {
+    const page = await readFile(path.join(root, "pages", "simulateurs", file), "utf8");
+    const article = page.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1];
+    assert.ok(article?.includes(`href="https://wattcombien.pages.dev/${target}"`), `${file} doit relier ${target} dans son contenu`);
   }
 });
 
