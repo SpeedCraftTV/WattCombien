@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { calculate, calculateChargingCost } from "../js/calculations.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -16,6 +17,42 @@ async function htmlFiles(directory = root) {
   }
   return files;
 }
+
+test("les exemples éditoriaux correspondent aux calculs des simulateurs", async () => {
+  const [pc, box, refrigerator, charging] = await Promise.all([
+    "pages/guides/cout-pc-gaming.html",
+    "pages/simulateurs/box-internet.html",
+    "pages/simulateurs/refrigerateur.html",
+    "pages/simulateurs/recharge-batterie.html"
+  ].map((file) => readFile(path.join(root, file), "utf8")));
+  const numberFrom = (html, pattern) => {
+    const match = html.match(pattern);
+    assert.ok(match, `Résultat absent : ${pattern}`);
+    return Number(match[1].replace(",", "."));
+  };
+  const rounded = (value) => Math.round(value * 100) / 100;
+  const pcResult = calculate({ power: 400, hours: 3, days: 7, quantity: 1, price: 0.20 });
+  assert.equal(numberFrom(pc, /1,2 × 365 = ([\d,]+) kWh/), rounded(pcResult.annualKwh));
+  assert.equal(numberFrom(pc, /438 × 0,20 = ([\d,]+) €/), rounded(pcResult.annualCost));
+  assert.equal(numberFrom(pc, /36 kWh, soit ([\d,]+) €/), rounded(pcResult.monthlyCost));
+  const boxResult = calculate({ power: 12, hours: 24, days: 7, quantity: 1, price: 0.20 });
+  assert.equal(numberFrom(box, /0,288 × 365 = ([\d,]+) kWh/), rounded(boxResult.annualKwh));
+  assert.equal(numberFrom(box, /105,12 × 0,20 = ([\d,]+) €/), rounded(boxResult.annualCost));
+  assert.equal(numberFrom(box, /8,64 kWh, soit ([\d,]+) €/), rounded(boxResult.monthlyCost));
+  const refrigeratorResult = calculate({ power: 25, hours: 24, days: 7, quantity: 1, price: 0.20 });
+  assert.equal(numberFrom(refrigerator, /219 × 0,20 = ([\d,]+) €/), rounded(refrigeratorResult.annualCost));
+  assert.equal(numberFrom(refrigerator, /219 × 1 000 ÷ \(365 × 24\) = ([\d,]+) W/), 25);
+  assert.equal(refrigeratorResult.annualKwh, 219);
+  const chargingResult = calculateChargingCost({
+    capacity: 60, capacityUnit: "kWh", initialPercent: 20, targetPercent: 80,
+    pricePerKwh: 0.20, efficiencyPercent: 90, chargesPerPeriod: 2, period: "week"
+  });
+  assert.equal(numberFrom(charging, /÷ 100 = ([\d,]+) kWh/), rounded(chargingResult.energyAddedKwh));
+  assert.equal(numberFrom(charging, /36 ÷ 0,90 = ([\d,]+) kWh/), rounded(chargingResult.gridEnergyKwh));
+  assert.equal(numberFrom(charging, /dont ([\d,]+) kWh de pertes/), rounded(chargingResult.energyLossKwh));
+  assert.equal(numberFrom(charging, /40 × 0,20 = ([\d,]+) €/), rounded(chargingResult.costPerCharge));
+  assert.equal(numberFrom(charging, /8 × 2 × 52 = ([\d,]+) €/), rounded(chargingResult.annualCost));
+});
 
 test("toutes les pages ont un titre unique, un seul H1 et un canonical statique correct", async () => {
   const files = await htmlFiles();
