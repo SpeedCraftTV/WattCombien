@@ -136,6 +136,14 @@ label { display: block; margin-bottom: 7px; color: var(--text); font-size: 11px;
 .result-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 17px; padding-top: 13px; border-top: 1px solid var(--line); }
 .text-button { padding: 0; border: 0; background: none; color: var(--blue); cursor: pointer; font-size: 10px; font-weight: 700; }.text-button:hover { text-decoration: underline; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); }
+.saved-estimates { margin-top: 18px; padding: clamp(19px, 3vw, 25px); }
+.saved-estimates h3 { margin: 0 0 8px; font-size: 18px; }
+.saved-estimates p { margin: 6px 0; color: var(--muted); font-size: 13px; }
+.saved-list { display: grid; gap: 10px; margin: 14px 0; padding: 0; list-style: none; }
+.saved-list li { min-width: 0; padding: 13px; border: 1px solid var(--line); border-radius: 10px; overflow-wrap: anywhere; }
+.saved-list strong { display: block; }
+.saved-list .form-actions { margin-top: 10px; }
+.saved-estimates button:disabled { cursor: not-allowed; opacity: .55; }
 .compare-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }.compare-toolbar p { margin: 0; color: var(--muted); font-size: 11px; }.compare-toolbar .button { min-height: 39px; }
 .comparison-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .compare-card { position: relative; padding: 17px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }.compare-card.invalid { border-color: var(--red); }

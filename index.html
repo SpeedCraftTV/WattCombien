@@ -85,7 +85,7 @@
           <p class="field-error" id="form-error" role="alert" aria-live="polite"></p>
           <details class="formula-details"><summary>Comment est faite l’estimation ?</summary><p>Les heures quotidiennes sont appliquées aux jours choisis, puis moyennées sur 7 jours. Puissance (W) × heures ÷ 1 000 = kWh. L’estimation suppose une puissance constante pendant l’utilisation ; elle ne remplace pas une mesure au compteur.</p></details>
           <div class="form-actions"><button class="button button-primary" id="save-button" type="button">Enregistrer sur cet appareil</button><button class="button button-quiet" id="reset-button" type="reset">Réinitialiser</button></div>
-          <p class="privacy-hint">L’enregistrement est facultatif : rien n’est stocké avant votre action. Les données restent dans ce navigateur.</p>
+          <p class="privacy-hint">L’enregistrement est facultatif. Les estimations restent dans ce navigateur et peuvent disparaître si ses données sont effacées.</p>
         </form>
 
         <section class="panel results-panel" aria-labelledby="results-title" aria-live="polite">
@@ -101,6 +101,14 @@
           <p id="action-status" class="sr-only" aria-live="polite"></p>
         </section>
       </div>
+      <section class="panel saved-estimates" aria-labelledby="saved-estimates-title">
+        <h3 id="saved-estimates-title" tabindex="-1">Mes estimations</h3>
+        <p>Enregistrées uniquement dans ce navigateur, jusqu’à 20 estimations. Elles peuvent disparaître si les données du navigateur sont effacées.</p>
+        <p id="saved-count"></p>
+        <p id="saved-status" role="status" aria-live="polite"></p>
+        <ul id="saved-list" class="saved-list" aria-label="Estimations enregistrées"></ul>
+        <button class="button button-outline" id="clear-saved" type="button" disabled>Vider l’historique</button>
+      </section>
     </section>
 
     <aside class="ad-slot" data-ad-slot="between-calculator-and-comparison" aria-label="Emplacement publicitaire désactivé" hidden></aside>

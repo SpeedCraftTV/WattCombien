@@ -1,4 +1,5 @@
 import { calculate, formatEuro, formatNumber } from "./calculations.js";
+import { setupSavedEstimates } from "./saved-estimates.js";
 import "./seo.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -69,28 +70,22 @@ function updateMain() {
   } catch (issue) {
     error.textContent = issue.message;
     form.dataset.valid = "false";
+    for (const id of ["annual-cost", "annual-energy", "daily-cost", "weekly-cost", "monthly-cost"]) {
+      $(`#${id}`).textContent = "En attente";
+    }
+    $("#cost-chart").replaceChildren();
     return null;
   }
 }
 
 for (const field of form.querySelectorAll("input")) field.addEventListener("input", updateMain);
-form.addEventListener("reset", () => requestAnimationFrame(() => { error.textContent = ""; updateMain(); }));
+form.addEventListener("reset", () => requestAnimationFrame(() => {
+  error.textContent = "";
+  updateMain();
+  updateComparison();
+}));
 const currentYear = $("#current-year");
 if (currentYear) currentYear.textContent = String(new Date().getFullYear());
-
-const savedKey = "wattcombien.saved-estimates";
-$("#save-button").addEventListener("click", () => {
-  const current = updateMain();
-  if (!current) return;
-  try {
-    const saved = JSON.parse(localStorage.getItem(savedKey) || "[]");
-    saved.push({ ...current.input, ...current.result, savedAt: new Date().toISOString() });
-    localStorage.setItem(savedKey, JSON.stringify(saved.slice(-20)));
-    status.textContent = "Estimation enregistrée dans ce navigateur.";
-  } catch (issue) {
-    status.textContent = `Impossible d’enregistrer l’estimation : ${issue.message}`;
-  }
-});
 
 function resultText() {
   const current = updateMain();
@@ -154,7 +149,6 @@ function loadSharedParams() {
     const field = form.elements.namedItem(key);
     if (field && params.has(key)) field.value = params.get(key);
   }
-  updateMain();
 }
 
 const themeKey = "wattcombien.theme";
@@ -252,18 +246,31 @@ function addComparisonCard(device = { name: "Nouvel appareil", power: 100, hours
 function updateComparison() {
   const items = [];
   let invalid = false;
+  const price = $("#price");
+  const summary = $("#comparison-summary");
+  if (price.value.trim() === "" || !price.checkValidity()) {
+    for (const card of comparisonList.querySelectorAll(".compare-card")) {
+      card.classList.add("invalid");
+      card.removeAttribute("aria-label");
+      $(".compare-cost strong", card).textContent = "Tarif invalide";
+      $(".compare-cost small", card).textContent = "Renseignez un prix du kWh valide.";
+    }
+    summary.textContent = "Renseignez un prix du kWh valide dans le calculateur pour comparer les appareils.";
+    return;
+  }
   for (const card of comparisonList.querySelectorAll(".compare-card")) {
     const cardFields = [...card.querySelectorAll("[data-key]")];
     if (cardFields.some((field) => field.dataset.key !== "name" && (field.value.trim() === "" || !field.checkValidity()))) {
       card.classList.add("invalid");
       $(".compare-cost strong", card).textContent = "Valeurs à vérifier";
       $(".compare-cost small", card).textContent = "Vérifiez les limites de chaque champ.";
+      card.removeAttribute("aria-label");
       invalid = true;
       continue;
     }
     const data = Object.fromEntries(cardFields.map((field) => [field.dataset.key, field.dataset.key === "name" ? field.value.trim() : Number(field.value)]));
     try {
-      const result = calculate({ ...data, price: Number($("#price").value) });
+      const result = calculate({ ...data, price: Number(price.value) });
       card.classList.remove("invalid");
       $(".compare-cost strong", card).textContent = money(result.annualCost);
       $(".compare-cost small", card).textContent = `${number(result.annualKwh)} kWh/an`;
@@ -272,10 +279,10 @@ function updateComparison() {
       card.classList.add("invalid");
       $(".compare-cost strong", card).textContent = "Valeurs à vérifier";
       $(".compare-cost small", card).textContent = "Heures : de 0 à 24, jours : de 0 à 7.";
+      card.removeAttribute("aria-label");
       invalid = true;
     }
   }
-  const summary = $("#comparison-summary");
   summary.replaceChildren();
   if (!items.length) {
     summary.textContent = "Ajoutez au moins un appareil pour afficher le classement.";
@@ -303,3 +310,12 @@ $("#add-device").addEventListener("click", () => addComparisonCard());
 $("#price").addEventListener("input", updateComparison);
 loadSharedParams();
 updateMain();
+updateComparison();
+setupSavedEstimates({
+  getCurrent: updateMain,
+  restore(input) {
+    for (const [key, value] of Object.entries(input)) form.elements.namedItem(key).value = String(value);
+    updateMain();
+    updateComparison();
+  }
+});
