@@ -43,6 +43,67 @@ export function setupSavedEstimates({ getCurrent, restore }) {
   const status = document.querySelector("#saved-status");
   const clearButton = document.querySelector("#clear-saved");
   const saveButton = document.querySelector("#save-button");
+  const dashboardMessage = document.querySelector("#dashboard-message");
+  const dashboardContent = document.querySelector("#dashboard-content");
+  const ranking = document.querySelector("#dashboard-ranking");
+
+  function restoreEstimate(input) {
+    restore(input);
+    status.textContent = "Estimation restaurée et résultats recalculés.";
+  }
+
+  function renderDashboard(estimates, invalidCount) {
+    ranking.replaceChildren();
+    dashboardContent.hidden = estimates.length === 0;
+    if (!estimates.length) {
+      dashboardMessage.textContent = invalidCount
+        ? `${invalidCount} estimation(s) illisible(s), exclue(s) du tableau de bord. Consultez « Mes estimations ».`
+        : "Aucune estimation enregistrée. Utilisez « Enregistrer sur cet appareil » pour commencer.";
+      return;
+    }
+
+    dashboardMessage.textContent = `${estimates.length} estimation(s) prise(s) en compte${invalidCount ? ` ; ${invalidCount} estimation(s) illisible(s) exclue(s).` : "."}`;
+    const devices = estimates.reduce((total, entry) => total + entry.input.quantity, 0);
+    const annualEnergy = estimates.reduce((total, entry) => total + entry.result.annualKwh, 0);
+    const annualCost = estimates.reduce((total, entry) => total + entry.result.annualCost, 0);
+    document.querySelector("#dashboard-devices").textContent = formatNumber(devices, 0);
+    document.querySelector("#dashboard-energy").textContent = `${formatNumber(annualEnergy)} kWh / an`;
+    document.querySelector("#dashboard-monthly").textContent = `${formatEuro(annualCost / 12)} / mois`;
+    document.querySelector("#dashboard-annual").textContent = `${formatEuro(annualCost)} / an`;
+
+    const ordered = [...estimates].sort((a, b) => b.result.annualCost - a.result.annualCost);
+    ordered.forEach(({ input, result }, index) => {
+      const item = document.createElement("li");
+      const line = document.createElement("div");
+      line.className = "dashboard-entry";
+      const name = document.createElement("strong");
+      name.id = `dashboard-name-${index}`;
+      name.setAttribute("data-clarity-mask", "true");
+      name.textContent = `${input.name || "Appareil sans nom"} (${input.quantity})`;
+      const detail = document.createElement("span");
+      const share = annualCost === 0 ? null : result.annualCost / annualCost * 100;
+      detail.textContent = `${formatEuro(result.annualCost)} / an · ${share === null ? "Part indéterminée (total nul)" : `${formatNumber(share)} % du total`}`;
+      line.append(name, detail);
+      const bar = document.createElement("div");
+      bar.className = "dashboard-bar";
+      bar.setAttribute("aria-hidden", "true");
+      const fill = document.createElement("span");
+      fill.style.width = `${share ?? 0}%`;
+      bar.append(fill);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button button-outline";
+      button.textContent = "Restaurer";
+      button.setAttribute("aria-label", `Restaurer l’estimation classée ${index + 1}`);
+      button.setAttribute("aria-describedby", name.id);
+      button.addEventListener("click", () => {
+        restoreEstimate(input);
+        document.querySelector("#device-name").focus();
+      });
+      item.append(line, bar, button);
+      ranking.append(item);
+    });
+  }
 
   function showError(issue) {
     status.textContent = issue instanceof InvalidSavedData
@@ -58,6 +119,9 @@ export function setupSavedEstimates({ getCurrent, restore }) {
       list.replaceChildren();
       count.textContent = "Nombre d’estimations indisponible.";
       clearButton.disabled = !(issue instanceof InvalidSavedData);
+      ranking.replaceChildren();
+      dashboardContent.hidden = true;
+      dashboardMessage.textContent = "Tableau de bord indisponible : consultez le message dans « Mes estimations ».";
       showError(issue);
       return;
     }
@@ -66,11 +130,16 @@ export function setupSavedEstimates({ getCurrent, restore }) {
     status.textContent = message;
     clearButton.disabled = saved.length === 0;
     list.replaceChildren();
+    const validatedEntries = saved.map(validatedEstimate);
+    const validEntries = validatedEntries.filter(Boolean);
+    renderDashboard(validEntries, saved.length - validEntries.length);
     saved.forEach((entry, index) => {
-      const validated = validatedEstimate(entry);
+      const validated = validatedEntries[index];
       const signature = JSON.stringify(entry);
       const item = document.createElement("li");
       const title = document.createElement("strong");
+      title.id = `saved-name-${index}`;
+      title.setAttribute("data-clarity-mask", "true");
       title.textContent = validated ? validated.input.name || "Appareil sans nom" : `Estimation illisible n° ${index + 1}`;
       const details = document.createElement("p");
       details.textContent = validated
@@ -83,18 +152,17 @@ export function setupSavedEstimates({ getCurrent, restore }) {
         restoreButton.type = "button";
         restoreButton.className = "button button-outline";
         restoreButton.textContent = "Restaurer";
-        restoreButton.setAttribute("aria-label", `Restaurer ${title.textContent}`);
-        restoreButton.addEventListener("click", () => {
-          restore(validated.input);
-          status.textContent = "Estimation restaurée et résultats recalculés.";
-        });
+        restoreButton.setAttribute("aria-label", `Restaurer l’estimation ${index + 1}`);
+        restoreButton.setAttribute("aria-describedby", title.id);
+        restoreButton.addEventListener("click", () => restoreEstimate(validated.input));
         actions.append(restoreButton);
       }
       const deleteButton = document.createElement("button");
       deleteButton.type = "button";
       deleteButton.className = "button button-quiet";
       deleteButton.textContent = "Supprimer";
-      deleteButton.setAttribute("aria-label", `Supprimer ${title.textContent}`);
+      deleteButton.setAttribute("aria-label", `Supprimer l’estimation ${index + 1}`);
+      deleteButton.setAttribute("aria-describedby", title.id);
       deleteButton.addEventListener("click", () => {
         try {
           const current = readSaved();

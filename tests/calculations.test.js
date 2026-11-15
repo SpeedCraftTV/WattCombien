@@ -1,8 +1,49 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculate, calculateChargingCost, calculateElectricityBill, calculateTimeOfUse, formatEuro } from "../js/calculations.js";
+import { calculate, calculateChargingCost, calculateElectricityBill, calculateSolar, calculateTimeOfUse, formatEuro } from "../js/calculations.js";
 
 const approximately = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-12, `${actual} should be within 1e-12 of ${expected}`);
+
+test("solaire : calcule production, autoconsommation, vente et retour simple", () => {
+  const result = calculateSolar({
+    capacityKwp: 3, annualYield: 1100, selfConsumptionPercent: 40,
+    purchasePrice: 0.25, saleEnabled: true, salePrice: 0.1, installationCost: 6000
+  });
+  assert.equal(result.productionKwh, 3300);
+  assert.equal(result.selfConsumedKwh, 1320);
+  assert.equal(result.surplusKwh, 1980);
+  assert.equal(result.savings, 330);
+  assert.equal(result.saleRevenue, 198);
+  assert.equal(result.annualGrossGain, 528);
+  approximately(result.paybackYears, 6000 / 528);
+});
+
+test("solaire : gère la vente désactivée, les limites et le gain nul", () => {
+  const values = { capacityKwp: 3, annualYield: 1100, selfConsumptionPercent: 0, purchasePrice: 0.25, saleEnabled: false, salePrice: -1 };
+  const noSale = calculateSolar(values);
+  assert.equal(noSale.surplusKwh, 3300);
+  assert.equal(noSale.saleRevenue, 0);
+  assert.equal(noSale.paybackYears, null);
+  assert.equal(calculateSolar({ ...values, installationCost: 100 }).paybackYears, null);
+  const full = calculateSolar({ ...values, selfConsumptionPercent: 100, installationCost: 0 });
+  assert.equal(full.surplusKwh, 0);
+  assert.equal(full.paybackYears, 0);
+  const zero = calculateSolar({ ...values, capacityKwp: 0, saleEnabled: true, salePrice: 0.1 });
+  assert.equal(zero.productionKwh, 0);
+  assert.equal(zero.annualGrossGain, 0);
+});
+
+test("solaire : refuse les valeurs invalides et les résultats non finis", () => {
+  const values = { capacityKwp: 3, annualYield: 1100, selfConsumptionPercent: 40, purchasePrice: 0.25, saleEnabled: true, salePrice: 0.1 };
+  for (const key of ["capacityKwp", "annualYield", "selfConsumptionPercent", "purchasePrice", "salePrice", "installationCost"]) {
+    assert.throws(() => calculateSolar({ ...values, [key]: -1 }), RangeError);
+    assert.throws(() => calculateSolar({ ...values, [key]: NaN }), TypeError);
+  }
+  assert.throws(() => calculateSolar({ ...values, selfConsumptionPercent: 101 }), RangeError);
+  assert.throws(() => calculateSolar({ ...values, saleEnabled: "yes" }), TypeError);
+  assert.throws(() => calculateSolar({ ...values, capacityKwp: 1e308, annualYield: 1e308 }), RangeError);
+  assert.throws(() => calculateSolar({ ...values, capacityKwp: Number.MIN_VALUE, annualYield: 1, selfConsumptionPercent: 100, purchasePrice: 1, installationCost: 100 }), RangeError);
+});
 
 test("1000 W pendant une heure par jour donne 1 kWh par jour et 7 par semaine", () => {
   const result = calculate({ power: 1000, hours: 1, days: 7, price: 0.2 });

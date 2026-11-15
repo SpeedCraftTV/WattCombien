@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { calculate, calculateChargingCost } from "../js/calculations.js";
+import { calculate, calculateChargingCost, calculateSolar } from "../js/calculations.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -13,7 +13,7 @@ async function htmlFiles(directory = root) {
     if (entry.name === ".git") continue;
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await htmlFiles(fullPath));
-    else if (entry.name.endsWith(".html")) files.push(fullPath);
+    else if (entry.name.endsWith(".html") && fullPath !== path.join(root, "404.html")) files.push(fullPath);
   }
   return files;
 }
@@ -67,6 +67,9 @@ test("toutes les pages ont un titre unique, un seul H1 et un canonical statique 
     assert.ok(description, `${path.relative(root, file)} doit avoir une meta description`);
     assert.match(html, /<body\b[^>]*\bdata-canonical-path=/i, `${path.relative(root, file)} doit définir un chemin canonical configurable`);
     const canonicalPath = html.match(/<body\b[^>]*\bdata-canonical-path="([^"]*)"/i)?.[1];
+    const relativePath = path.relative(root, file).split(path.sep).join("/");
+    const expectedPath = relativePath === "index.html" ? "" : relativePath.endsWith("/index.html") ? relativePath.slice(0, -"index.html".length) : relativePath.replace(/\.html$/, "");
+    assert.equal(canonicalPath, expectedPath, `${relativePath} doit utiliser l’URL Cloudflare sans redirection`);
     const canonicals = [...html.matchAll(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/gi)];
     assert.equal(canonicals.length, 1, `${path.relative(root, file)} doit avoir un seul canonical statique`);
     assert.equal(canonicals[0][1], new URL(canonicalPath, "https://wattcombien.pages.dev/").href);
@@ -80,6 +83,15 @@ test("toutes les pages ont un titre unique, un seul H1 et un canonical statique 
       assert.ok(headingLevels[index] <= headingLevels[index - 1] + 1, `${path.relative(root, file)} saute un niveau de titre`);
     }
   }
+});
+
+test("la page 404 désactive le repli SPA sans entrer dans le sitemap", async () => {
+  const html = await readFile(path.join(root, "404.html"), "utf8");
+  const sitemap = await readFile(path.join(root, "sitemap.xml"), "utf8");
+  assert.match(html, /<meta name="robots" content="noindex">/);
+  assert.match(html, /<h1>Page introuvable<\/h1>/);
+  assert.match(html, /href="https:\/\/wattcombien\.pages\.dev\/"/);
+  assert.doesNotMatch(sitemap, /\/404(?:\.html)?</);
 });
 
 test("les balises Open Graph sont statiques, uniques et alignées sur les métadonnées canoniques", async () => {
@@ -180,8 +192,8 @@ test("le simulateur HP/HC est relié au site et ne préremplit aucun tarif", asy
   const page = await readFile(path.join(root, "pages", "simulateurs", "heures-pleines-creuses.html"), "utf8");
   const homepage = await readFile(path.join(root, "index.html"), "utf8");
   const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
-  assert.match(homepage, /pages\/simulateurs\/heures-pleines-creuses\.html/);
-  assert.match(simulators, /pages\/simulateurs\/heures-pleines-creuses\.html/);
+  assert.match(homepage, /pages\/simulateurs\/heures-pleines-creuses"/);
+  assert.match(simulators, /pages\/simulateurs\/heures-pleines-creuses"/);
   for (const name of ["annualKwh", "basePrice", "peakPrice", "offPeakPrice", "offPeakPercent"]) {
     const input = page.match(new RegExp(`<input\\b(?=[^>]*\\bname="${name}")[^>]*>`))?.[0];
     assert.ok(input, `${name} doit être présent`);
@@ -196,7 +208,7 @@ test("le simulateur HP/HC est relié au site et ne préremplit aucun tarif", asy
 test("le calculateur de recharge est listé, accessible et ses valeurs d’exemple sont explicites", async () => {
   const page = await readFile(path.join(root, "pages", "simulateurs", "recharge-batterie.html"), "utf8");
   const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
-  assert.match(simulators, /pages\/simulateurs\/recharge-batterie\.html/);
+  assert.match(simulators, /pages\/simulateurs\/recharge-batterie"/);
   assert.match(page, /charging-calculator\.js/);
   assert.match(page, /Les capacités proposées sont uniquement des exemples modifiables/);
   for (const name of ["capacity", "initialPercent", "targetPercent", "efficiencyPercent", "pricePerKwh", "chargesPerPeriod"]) {
@@ -216,7 +228,7 @@ test("le calculateur de recharge est listé, accessible et ses valeurs d’exemp
 test("le simulateur de facture est relié au site et ne préremplit aucun tarif", async () => {
   const page = await readFile(path.join(root, "pages", "simulateurs", "facture-electricite.html"), "utf8");
   const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
-  assert.match(simulators, /pages\/simulateurs\/facture-electricite\.html/);
+  assert.match(simulators, /pages\/simulateurs\/facture-electricite"/);
   assert.match(page, /bill-simulator\.js/);
   for (const name of ["consumption", "basePrice", "peakPrice", "offPeakPrice", "offPeakPercent", "subscription"]) {
     const input = page.match(new RegExp(`<input\\b(?=[^>]*\\bname="${name}")[^>]*>`))?.[0];
@@ -230,13 +242,44 @@ test("le simulateur de facture est relié au site et ne préremplit aucun tarif"
   assert.match(page, /id="bill-copy" type="button" disabled/);
 });
 
+test("le simulateur solaire est relié au site et son exemple correspond aux calculs", async () => {
+  const page = await readFile(path.join(root, "pages", "simulateurs", "solaire-photovoltaique.html"), "utf8");
+  const simulators = await readFile(path.join(root, "pages", "simulateurs", "index.html"), "utf8");
+  assert.match(simulators, /pages\/simulateurs\/solaire-photovoltaique"/);
+  assert.match(page, /solar-simulator\.js/);
+  for (const name of ["capacityKwp", "annualYield", "selfConsumptionPercent", "purchasePrice", "salePrice"]) {
+    const input = page.match(new RegExp(`<input\\b(?=[^>]*\\bname="${name}")[^>]*>`))?.[0];
+    assert.ok(input, `${name} doit être présent`);
+    assert.match(input, /\brequired\b/);
+    assert.doesNotMatch(input, /\bvalue=/);
+    assert.match(input, /aria-describedby="solar-error"/);
+  }
+  const result = calculateSolar({ capacityKwp: 3, annualYield: 1100, selfConsumptionPercent: 40, purchasePrice: 0.25, saleEnabled: true, salePrice: 0.1, installationCost: 6000 });
+  assert.equal(result.productionKwh, 3300);
+  assert.equal(result.selfConsumedKwh, 1320);
+  assert.equal(result.surplusKwh, 1980);
+  assert.equal(result.savings, 330);
+  assert.equal(result.saleRevenue, 198);
+  assert.equal(result.annualGrossGain, 528);
+  assert.match(page, /3 × 1 100 = 3 300 kWh\/an/);
+  assert.match(page, /330 \+ 198 = 528 €\/an/);
+  assert.match(page, /6 000 ÷ 528 ≈ 11,36 ans/);
+});
+
+test("les noms des estimations sont explicitement masqués dans les éléments destinés à Clarity", async () => {
+  const page = await readFile(path.join(root, "index.html"), "utf8");
+  for (const id of ["device-name", "results-title"]) {
+    assert.match(page, new RegExp(`<[^>]+id="${id}"[^>]+data-clarity-mask="true"`));
+  }
+});
+
 test("les pages relient les outils complémentaires depuis leur contenu", async () => {
   for (const [file, target] of [
-    ["facture-electricite.html", "pages/simulateurs/heures-pleines-creuses.html"],
-    ["heures-pleines-creuses.html", "pages/simulateurs/facture-electricite.html"],
+    ["facture-electricite.html", "pages/simulateurs/heures-pleines-creuses"],
+    ["heures-pleines-creuses.html", "pages/simulateurs/facture-electricite"],
     ["recharge-batterie.html", "#calculateur"],
     ["pc-gaming.html", "#comparateur"],
-    ["veille.html", "pages/simulateurs/facture-electricite.html"]
+    ["veille.html", "pages/simulateurs/facture-electricite"]
   ]) {
     const page = await readFile(path.join(root, "pages", "simulateurs", file), "utf8");
     const article = page.match(/<article\b[^>]*>([\s\S]*?)<\/article>/i)?.[1];
@@ -412,6 +455,7 @@ test("les liens de navigation internes utilisent les URL canoniques Cloudflare",
       if (url.origin !== siteOrigin) continue;
       let pathname = decodeURIComponent(url.pathname);
       if (pathname.endsWith("/")) pathname += "index.html";
+      else if (!path.extname(pathname)) pathname += ".html";
       const target = path.resolve(root, pathname.slice(1));
       await stat(target).catch((issue) => {
         throw new Error(`${path.relative(root, file)}: canonical link "${href}" is broken (${issue.message})`);
@@ -421,6 +465,9 @@ test("les liens de navigation internes utilisent les URL canoniques Cloudflare",
         const fragment = decodeURIComponent(url.hash.slice(1));
         assert.ok(new RegExp(`\\bid="${fragment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`).test(targetHtml), `${path.relative(root, file)}: missing #${fragment} in ${path.relative(root, target)}`);
       }
+      const targetHtml = await readFile(target, "utf8");
+      const canonical = targetHtml.match(/<link\b[^>]*\brel="canonical"\s+href="([^"]+)"/i)?.[1];
+      assert.equal(`${url.origin}${url.pathname}`, canonical, `${path.relative(root, file)} : le lien interne doit viser l’URL canonique`);
     }
   }
 });

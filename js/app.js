@@ -110,6 +110,8 @@ $("#share-button").addEventListener("click", async () => {
   if (!current) return;
   const { input } = current;
   const url = new URL(window.location.href);
+  url.search = "";
+  url.hash = "";
   for (const [key, value] of Object.entries({ name: input.name, power: input.power, hours: input.hours, days: input.days, price: input.price, quantity: input.quantity })) url.searchParams.set(key, String(value));
   try {
     await navigator.clipboard.writeText(url.href);
@@ -205,6 +207,7 @@ function addComparisonCard(device = { name: "Nouvel appareil", power: 100, hours
   nameInput.maxLength = 60;
   nameInput.value = device.name;
   nameInput.setAttribute("aria-label", `Nom de l’appareil ${id}`);
+  nameInput.setAttribute("data-clarity-mask", "true");
 
   const fields = document.createElement("div");
   fields.className = "compare-fields";
@@ -294,6 +297,7 @@ function updateComparison() {
   leaderLabel.textContent = "Le plus coûteux dans cette estimation";
   const leaderValue = document.createElement("strong");
   leaderValue.textContent = `${items[0].name || "Appareil sans nom"} · ${money(items[0].result.annualCost)} / an`;
+  leaderValue.setAttribute("data-clarity-mask", "true");
   leader.append(leaderLabel, leaderValue);
   summary.append(leader);
   const details = document.createElement("p");
@@ -301,7 +305,7 @@ function updateComparison() {
   summary.append(details);
   for (const [index, item] of items.entries()) {
     item.card.style.setProperty("--rank", String(items.length - index));
-    item.card.setAttribute("aria-label", `Rang ${index + 1} : ${item.name || "Appareil sans nom"}, ${money(item.result.annualCost)} par an`);
+    item.card.setAttribute("aria-label", `Rang ${index + 1} : ${money(item.result.annualCost)} par an`);
   }
 }
 

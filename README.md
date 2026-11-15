@@ -7,7 +7,8 @@ Site statique francophone pour estimer et comparer la consommation électrique d
 - Calculateur principal : consommation moyenne journalière, hebdomadaire, sur 30 jours et annuelle, coût aux mêmes périodes, graphique accessible, CSV, copie et partage par URL.
 - Comparateur multi-appareils avec classement annuel, écart et économie théorique maximale si le service rendu est équivalent.
 - Enregistrement local explicitement déclenché par l’utilisateur : consultation, restauration et suppression de 20 simulations au maximum, sans remplacement automatique ; thème clair/sombre mémorisé si le navigateur l’autorise.
-- Neuf simulateurs par appareil, un comparateur Base / heures pleines-heures creuses, un calculateur de recharge de batterie, un simulateur de facture électrique et six guides éditoriaux.
+- Tableau de bord local : cumul indicatif, classement et répartition des estimations enregistrées, sans déduplication automatique.
+- Neuf simulateurs par appareil, un comparateur Base / heures pleines-heures creuses, un calculateur de recharge de batterie, un simulateur de facture électrique, un simulateur solaire et six guides éditoriaux.
 - Pages Mentions légales, Confidentialité et Contact à relire et compléter avant lancement.
 - Sitemap et robots.txt à personnaliser avec l’URL publique.
 - AdSense et Microsoft Clarity sont configurés. Leurs scripts tiers ne se chargent qu’après les choix CMP requis. Aucune police externe n’est chargée.

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="google-adsense-account" content="ca-pub-5689496403962976">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Estimez la production solaire annuelle, l’autoconsommation, le surplus et les gains bruts de vos panneaux photovoltaïques selon vos hypothèses.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="fr_FR">
+  <meta property="og:site_name" content="WattCombien">
+  <meta property="og:title" content="Simulateur de production solaire photovoltaïque | WattCombien">
+  <meta property="og:description" content="Estimez la production solaire annuelle, l’autoconsommation, le surplus et les gains bruts de vos panneaux photovoltaïques selon vos hypothèses.">
+  <meta property="og:url" content="https://wattcombien.pages.dev/pages/simulateurs/solaire-photovoltaique">
+  <title>Simulateur de production solaire photovoltaïque | WattCombien</title>
+  <link rel="stylesheet" href="../../css/styles.css">
+  <link rel="icon" href="../../assets/favicon.svg" type="image/svg+xml">
+  <script type="module" src="../../js/solar-simulator.js"></script>
+  <script type="module" src="../../js/adsense.js"></script>
+  <link rel="canonical" href="https://wattcombien.pages.dev/pages/simulateurs/solaire-photovoltaique">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://wattcombien.pages.dev/" },
+      { "@type": "ListItem", "position": 2, "name": "Simulateurs", "item": "https://wattcombien.pages.dev/pages/simulateurs/" },
+      { "@type": "ListItem", "position": 3, "name": "Solaire photovoltaïque", "item": "https://wattcombien.pages.dev/pages/simulateurs/solaire-photovoltaique" }
+    ]
+  }
+  </script>
+</head>
+<body data-canonical-path="pages/simulateurs/solaire-photovoltaique">
+  <a class="skip-link" href="#main">Aller au contenu</a>
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <nav class="main-nav" aria-label="Navigation principale">
+        <a href="https://wattcombien.pages.dev/#calculateur">Calculateur</a>
+        <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a>
+        <a href="https://wattcombien.pages.dev/#guides">Guides</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="content-main shell">
+    <article class="article">
+      <p class="breadcrumbs"><a href="https://wattcombien.pages.dev/">Accueil</a> / <a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a> / Solaire photovoltaïque</p>
+      <p class="eyebrow">SIMULATEUR SOLAIRE</p>
+      <h1>Estimer sa production solaire photovoltaïque</h1>
+      <p class="lead">Estimez la production annuelle, l’autoconsommation et les gains bruts d’une installation à partir de vos propres hypothèses.</p>
+      <div class="callout">Aucun tarif ni productible n’est prérempli. Le calcul est indicatif, sans garantie de production ou de rentabilité, et ne remplace pas une étude technique personnalisée.</div>
+
+      <form class="simulator-form panel solar-form" id="solar-form" novalidate>
+        <h2>Vos paramètres</h2>
+        <div class="field-grid">
+          <div><label for="solar-capacity">Puissance installée</label><div class="input-wrap"><input id="solar-capacity" name="capacityKwp" type="number" min="0" max="1000000" step="any" required inputmode="decimal" aria-describedby="solar-error"><span>kWc</span></div></div>
+          <div><label for="solar-yield">Productible annuel estimé</label><div class="input-wrap"><input id="solar-yield" name="annualYield" type="number" min="0" max="100000" step="any" required inputmode="decimal" aria-describedby="solar-error"><span>kWh/kWc</span></div></div>
+          <div><label for="solar-self-consumption">Part de la production autoconsommée</label><div class="input-wrap"><input id="solar-self-consumption" name="selfConsumptionPercent" type="number" min="0" max="100" step="any" required inputmode="decimal" aria-describedby="solar-error"><span>%</span></div></div>
+          <div><label for="solar-purchase-price">Prix de l’électricité achetée</label><div class="input-wrap"><input id="solar-purchase-price" name="purchasePrice" type="number" min="0" max="10000" step="any" required inputmode="decimal" aria-describedby="solar-error"><span>€/kWh</span></div></div>
+          <div><label for="solar-installation-cost">Coût initial de l’installation (facultatif)</label><div class="input-wrap"><input id="solar-installation-cost" name="installationCost" type="number" min="0" max="1000000000" step="any" inputmode="decimal" aria-describedby="solar-error"><span>€</span></div></div>
+        </div>
+        <label for="solar-sale-enabled"><input id="solar-sale-enabled" name="saleEnabled" type="checkbox"> Inclure la vente du surplus</label>
+        <div id="solar-sale-fields" hidden>
+          <label for="solar-sale-price">Tarif de vente du surplus à renseigner</label>
+          <div class="input-wrap"><input id="solar-sale-price" name="salePrice" type="number" min="0" max="10000" step="any" required disabled inputmode="decimal" aria-describedby="solar-error"><span>€/kWh</span></div>
+        </div>
+        <p id="solar-error" class="field-error" role="alert" aria-live="polite"></p>
+      </form>
+
+      <section class="panel charging-results" aria-labelledby="solar-results-title" aria-live="polite">
+        <h2 id="solar-results-title">Résultats annuels estimés</h2>
+        <div class="charging-results-grid">
+          <div class="charging-result-card"><h3>Production solaire</h3><strong id="solar-production">En attente</strong></div>
+          <div class="charging-result-card"><h3>Énergie autoconsommée</h3><strong id="solar-consumed">En attente</strong></div>
+          <div class="charging-result-card"><h3>Surplus non autoconsommé</h3><strong id="solar-surplus">En attente</strong></div>
+          <div class="charging-result-card"><h3>Achats d’électricité évités</h3><strong id="solar-savings">En attente</strong></div>
+          <div class="charging-result-card"><h3>Revenus théoriques du surplus</h3><strong id="solar-revenue">En attente</strong></div>
+          <div class="charging-result-card"><h3>Gain annuel brut</h3><strong id="solar-gain">En attente</strong></div>
+          <div class="charging-result-card"><h3>Temps de retour simple indicatif</h3><strong id="solar-payback">En attente</strong></div>
+        </div>
+      </section>
+
+      <details class="formula-details charging-formula">
+        <summary>Formules et hypothèses</summary>
+        <p>Production annuelle = puissance installée × productible annuel. Énergie autoconsommée = production × taux d’autoconsommation ÷ 100. Surplus = production − énergie autoconsommée.</p>
+        <p>Économies brutes sur les achats = énergie autoconsommée × prix d’achat. Si la vente est activée, revenus théoriques = surplus × tarif de vente ; sinon ils sont nuls. Gain annuel brut = économies brutes + revenus théoriques.</p>
+        <p>Temps de retour simple = coût initial ÷ gain annuel brut, uniquement si le coût est renseigné et le gain positif. Il suppose un gain identique chaque année et ne tient pas compte des coûts futurs, de l’évolution des tarifs, des taxes, du financement ou de la dégradation. Ce n’est pas un gain net ni une garantie de rentabilité.</p>
+      </details>
+
+      <h2>Choisir des hypothèses adaptées</h2>
+      <p>Le productible annuel est une estimation en kWh produits par kWc installé. Il dépend notamment de la localisation, de l’orientation, de l’inclinaison, de l’ombrage et des pertes de l’installation. Renseignez une estimation adaptée à votre projet et aux pertes qu’elle inclut : le simulateur ne détermine pas la production selon votre adresse.</p>
+      <p>Le taux d’autoconsommation est la part de la production utilisée sur place. Il dépend de la simultanéité entre production et usages, ainsi que d’un éventuel stockage. Le calcul suppose que cette part est connue ; il ne modélise ni les heures de production ni votre consommation réelle.</p>
+      <p>Pour mettre ces économies en perspective avec vos dépenses, consultez le <a href="https://wattcombien.pages.dev/pages/simulateurs/facture-electricite">simulateur de facture électrique</a>. Ne déduisez pas deux fois les économies si la consommation saisie y tient déjà compte du solaire.</p>
+      <h2>Exemple chiffré fictif</h2>
+      <p>Pour illustrer le calcul, supposons 3 kWc, un productible de 1 100 kWh/kWc par an, 40 % d’autoconsommation, un prix d’achat de 0,25 €/kWh, une vente du surplus à 0,10 €/kWh et un coût initial de 6 000 €. Ces chiffres sont des hypothèses fictives, ni des tarifs officiels ni une prévision.</p>
+      <ul>
+        <li>Production : 3 × 1 100 = 3 300 kWh/an ; autoconsommation : 3 300 × 40 % = 1 320 kWh/an.</li>
+        <li>Surplus : 3 300 − 1 320 = 1 980 kWh/an ; achats évités : 1 320 × 0,25 = 330 €/an.</li>
+        <li>Vente théorique : 1 980 × 0,10 = 198 €/an ; gain brut : 330 + 198 = 528 €/an.</li>
+        <li>Retour simple : 6 000 ÷ 528 ≈ 11,36 ans, avant frais futurs et sans garantie.</li>
+      </ul>
+      <h2>Questions fréquentes</h2>
+      <h3>Autoconsommation et autonomie, est-ce la même chose ?</h3>
+      <p>Non. L’autoconsommation est la part de la production solaire utilisée sur place. L’autonomie est la part de votre consommation totale couverte par cette production. Ce simulateur ne calcule pas l’autonomie.</p>
+      <h3>Que devient le surplus si la vente est désactivée ?</h3>
+      <p>Le surplus reste affiché mais n’apporte aucun revenu dans le calcul. Sa valorisation réelle dépend de l’installation, du contrat et des conditions applicables.</p>
+      <h3>Le gain brut représente-t-il une économie nette ?</h3>
+      <p>Non. Il additionne les achats évités et les revenus théoriques, sans retrancher notamment l’entretien, le remplacement d’équipements, les frais, taxes ou le financement. Vérifiez aussi l’éligibilité et les conditions réelles de vente.</p>
+      <h3>Le temps de retour est-il garanti ?</h3>
+      <p>Non. C’est une division simplifiée, sans simulation des variations futures. La production, les prix, les frais et la durée de vie de l’installation peuvent changer le résultat.</p>
+    </article>
+  </main>
+  <footer class="site-footer">
+    <div class="shell footer-main">
+      <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
+      <p>Calculs indicatifs selon les paramètres que vous renseignez.</p>
+      <nav aria-label="Informations">
+        <a href="https://wattcombien.pages.dev/pages/mentions-legales">Mentions légales</a>
+        <a href="https://wattcombien.pages.dev/pages/confidentialite">Confidentialité</a>
+        <a href="https://wattcombien.pages.dev/pages/contact">Contact</a>
+      </nav>
+    </div>
+    <div class="shell footer-bottom">
+      <span>© WattCombien</span>
+      <span>Outil gratuit, sans inscription.</span>
+    </div>
+  </footer>
+</body>
+</html>

@@ -36,7 +36,7 @@
     <div class="shell header-inner">
       <a class="brand" href="https://wattcombien.pages.dev/" aria-label="WattCombien, accueil"><span class="brand-mark" aria-hidden="true">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
       <nav class="main-nav" aria-label="Navigation principale">
-        <a href="#calculateur">Calculateur</a><a href="#comparateur">Comparer</a><a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a><a href="https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses.html">HP / HC</a><a href="#guides">Guides</a>
+        <a href="#calculateur">Calculateur</a><a href="#comparateur">Comparer</a><a href="https://wattcombien.pages.dev/pages/simulateurs/">Simulateurs</a><a href="https://wattcombien.pages.dev/pages/simulateurs/heures-pleines-creuses">HP / HC</a><a href="#guides">Guides</a>
       </nav>
       <button class="theme-toggle" type="button" aria-label="Activer le thème clair" title="Changer de thème">☼ <span class="theme-label">Thème clair</span></button>
     </div>
@@ -48,7 +48,7 @@
         <p class="eyebrow"><span class="status-dot"></span> Simple, gratuit, sans inscription</p>
         <h1>Votre électricité,<br><span class="gradient-text">en chiffres clairs.</span></h1>
         <p class="hero-lead">Estimez ce que vos appareils consomment réellement, comparez leur coût et prenez des décisions éclairées grâce à vos propres données.</p>
-        <div class="hero-actions"><a class="button button-primary" href="#calculateur">Calculer ma consommation <span aria-hidden="true">↓</span></a><a class="text-link" href="https://wattcombien.pages.dev/pages/guides/calcul-consommation.html">Comprendre le calcul <span aria-hidden="true">↗</span></a></div>
+        <div class="hero-actions"><a class="button button-primary" href="#calculateur">Calculer ma consommation <span aria-hidden="true">↓</span></a><a class="text-link" href="https://wattcombien.pages.dev/pages/guides/calcul-consommation">Comprendre le calcul <span aria-hidden="true">↗</span></a></div>
         <p class="hero-note">Aucune mesure ni tarif universel : vous choisissez la puissance et le prix du kWh.</p>
       </div>
       <div class="hero-visual" aria-label="Illustration d'une estimation de consommation">
@@ -71,7 +71,7 @@
         <form class="panel calculator-form" id="calculator-form" novalidate>
           <div class="panel-title"><span class="step-number">01</span><div><h3>Votre appareil</h3><p>Utilisez une puissance moyenne si elle varie.</p></div></div>
           <label for="device-name">Nom de l’appareil <span class="optional">facultatif</span></label>
-          <input id="device-name" name="name" type="text" maxlength="60" placeholder="Ex. ordinateur de bureau" autocomplete="off">
+          <input id="device-name" name="name" type="text" maxlength="60" placeholder="Ex. ordinateur de bureau" autocomplete="off" data-clarity-mask="true">
           <div class="field-grid">
             <div><label for="power">Puissance <span class="unit">W</span></label><div class="input-wrap"><input id="power" name="power" type="number" min="0" max="1000000" step="any" value="300" required inputmode="decimal"><span>W</span></div></div>
             <div><label for="hours">Utilisation par jour <span class="unit">h</span></label><div class="input-wrap"><input id="hours" name="hours" type="number" min="0" max="24" step="any" value="4" required inputmode="decimal"><span>h / jour</span></div></div>
@@ -89,7 +89,7 @@
         </form>
 
         <section class="panel results-panel" aria-labelledby="results-title" aria-live="polite">
-          <div class="results-heading"><div><p class="eyebrow">VOTRE ESTIMATION</p><h3 id="results-title">Ordinateur de bureau</h3></div><span class="result-badge">● Calcul local</span></div>
+          <div class="results-heading"><div><p class="eyebrow">VOTRE ESTIMATION</p><h3 id="results-title" data-clarity-mask="true">Ordinateur de bureau</h3></div><span class="result-badge">● Calcul local</span></div>
           <div class="primary-result"><div><span>Coût estimé / an</span><strong id="annual-cost">En attente</strong></div><div class="result-kwh"><span>Énergie / an</span><strong id="annual-energy">En attente</strong></div></div>
           <div class="period-results">
             <div><span>Par jour (moyenne)</span><strong id="daily-cost">En attente</strong></div>
@@ -97,10 +97,27 @@
             <div><span>Sur 30 jours</span><strong id="monthly-cost">En attente</strong></div>
           </div>
           <div class="chart-block"><div class="chart-heading"><h4>Coût estimé par période</h4><span>€</span></div><div id="cost-chart" class="cost-chart" role="img" aria-label="Graphique du coût estimé par période"></div><div class="chart-labels"><span>Jour</span><span>Semaine</span><span>30 jours</span><span>Année</span></div></div>
-          <div class="result-actions"><button class="text-button" id="copy-button" type="button">Copier les résultats</button><button class="text-button" id="share-button" type="button">Partager l’estimation</button><button class="text-button" id="csv-button" type="button">Exporter en CSV</button></div>
+          <div class="result-actions"><button class="text-button" id="copy-button" type="button">Copier les résultats</button><button class="text-button" id="share-button" type="button" aria-describedby="share-privacy">Partager l’estimation</button><button class="text-button" id="csv-button" type="button">Exporter en CSV</button></div>
+          <p id="share-privacy">Le lien partagé contient le nom et les paramètres saisis. N’y indiquez aucune donnée personnelle ou confidentielle.</p>
           <p id="action-status" class="sr-only" aria-live="polite"></p>
         </section>
       </div>
+      <section class="panel dashboard" id="tableau-de-bord" aria-labelledby="dashboard-title">
+        <h3 id="dashboard-title">Mon tableau de bord énergétique</h3>
+        <p>Les totaux additionnent toutes les estimations valides enregistrées, avec les quantités et prix propres à chacune. Si plusieurs estimations concernent le même appareil, il est compté plusieurs fois : supprimez les doublons dans « Mes estimations » pour les exclure.</p>
+        <p>Ces chiffres sont indicatifs et ne représentent pas nécessairement une facture complète : les abonnements, frais et appareils non enregistrés ne sont pas inclus. Le coût mensuel est une moyenne annuelle divisée par 12.</p>
+        <p id="dashboard-message" role="status">En attente du chargement des estimations.</p>
+        <div id="dashboard-content" hidden>
+          <div class="dashboard-totals">
+            <div><span>Appareils enregistrés (quantités)</span><strong id="dashboard-devices"></strong></div>
+            <div><span>Consommation annuelle</span><strong id="dashboard-energy"></strong></div>
+            <div><span>Coût mensuel moyen</span><strong id="dashboard-monthly"></strong></div>
+            <div><span>Coût annuel</span><strong id="dashboard-annual"></strong></div>
+          </div>
+          <h4>Classement et répartition des dépenses annuelles</h4>
+          <ol id="dashboard-ranking"></ol>
+        </div>
+      </section>
       <section class="panel saved-estimates" aria-labelledby="saved-estimates-title">
         <h3 id="saved-estimates-title" tabindex="-1">Mes estimations</h3>
         <p>Enregistrées uniquement dans ce navigateur, jusqu’à 20 estimations. Elles peuvent disparaître si les données du navigateur sont effacées.</p>
@@ -127,12 +144,12 @@
     <section class="section shell" id="guides">
       <div class="section-heading"><div><p class="eyebrow">03 : comprendre pour mieux choisir</p><h2>Des repères, sans raccourcis.</h2></div><p>Des explications pratiques pour interpréter vos estimations et agir sur vos usages.</p></div>
       <div class="guide-grid">
-        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/calcul-consommation.html"><span class="guide-index">GUIDE 01</span><h3>Calculer sa consommation électrique</h3><p>La formule, les conversions et la convention de moyenne expliquées pas à pas.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
-        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/watts-et-kwh.html"><span class="guide-index">GUIDE 02</span><h3>Watts et kilowattheures : quelle différence ?</h3><p>Distinguer puissance et énergie avec des exemples concrets et faciles à vérifier.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
-        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/puissance-consommation-reelle.html"><span class="guide-index">GUIDE 03</span><h3>Puissance affichée, consommation réelle</h3><p>Pourquoi l’étiquette ou la fiche technique ne suffit pas à prévoir une facture.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
-        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/cout-pc-gaming.html"><span class="guide-index">GUIDE 04</span><h3>Estimer le coût d’un PC gaming</h3><p>Prendre en compte les sessions, les phases d’inactivité et les mesures utiles.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
-        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/appareils-en-veille.html"><span class="guide-index">GUIDE 05</span><h3>Réduire la consommation en veille</h3><p>Repérer les appareils concernés et décider quand une mesure est pertinente.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
-        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/comparer-appareils.html"><span class="guide-index">GUIDE 06</span><h3>Comparer deux équipements</h3><p>Comparer un service rendu équivalent plutôt que deux chiffres isolés.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
+        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/calcul-consommation"><span class="guide-index">GUIDE 01</span><h3>Calculer sa consommation électrique</h3><p>La formule, les conversions et la convention de moyenne expliquées pas à pas.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
+        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/watts-et-kwh"><span class="guide-index">GUIDE 02</span><h3>Watts et kilowattheures : quelle différence ?</h3><p>Distinguer puissance et énergie avec des exemples concrets et faciles à vérifier.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
+        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/puissance-consommation-reelle"><span class="guide-index">GUIDE 03</span><h3>Puissance affichée, consommation réelle</h3><p>Pourquoi l’étiquette ou la fiche technique ne suffit pas à prévoir une facture.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
+        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/cout-pc-gaming"><span class="guide-index">GUIDE 04</span><h3>Estimer le coût d’un PC gaming</h3><p>Prendre en compte les sessions, les phases d’inactivité et les mesures utiles.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
+        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/appareils-en-veille"><span class="guide-index">GUIDE 05</span><h3>Réduire la consommation en veille</h3><p>Repérer les appareils concernés et décider quand une mesure est pertinente.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
+        <a class="guide-card" href="https://wattcombien.pages.dev/pages/guides/comparer-appareils"><span class="guide-index">GUIDE 06</span><h3>Comparer deux équipements</h3><p>Comparer un service rendu équivalent plutôt que deux chiffres isolés.</p><span class="guide-arrow" aria-hidden="true">↗</span></a>
       </div>
     </section>
     <section class="section shell simulator-callout"><div><p class="eyebrow">OUTILS PAR APPAREIL</p><h2>Un usage particulier en tête ?</h2><p>Choisissez un simulateur adapté à votre équipement, puis ajustez toutes les hypothèses.</p></div><a class="button button-outline" href="https://wattcombien.pages.dev/pages/simulateurs/">Voir les simulateurs <span aria-hidden="true">→</span></a></section>
@@ -142,9 +159,9 @@
     <a class="brand" href="https://wattcombien.pages.dev/"><span class="brand-mark">W</span><span>Watt<span class="brand-accent">Combien</span></span></a>
     <p>Calculs indicatifs selon les paramètres que vous renseignez.</p>
     <nav aria-label="Informations">
-      <a href="https://wattcombien.pages.dev/pages/mentions-legales.html">Mentions légales</a>
-      <a href="https://wattcombien.pages.dev/pages/confidentialite.html">Confidentialité</a>
-      <a href="https://wattcombien.pages.dev/pages/contact.html">Contact</a>
+      <a href="https://wattcombien.pages.dev/pages/mentions-legales">Mentions légales</a>
+      <a href="https://wattcombien.pages.dev/pages/confidentialite">Confidentialité</a>
+      <a href="https://wattcombien.pages.dev/pages/contact">Contact</a>
     </nav>
   </div>
   <div class="shell footer-bottom">

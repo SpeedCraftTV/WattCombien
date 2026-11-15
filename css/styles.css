@@ -136,6 +136,20 @@ label { display: block; margin-bottom: 7px; color: var(--text); font-size: 11px;
 .result-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 17px; padding-top: 13px; border-top: 1px solid var(--line); }
 .text-button { padding: 0; border: 0; background: none; color: var(--blue); cursor: pointer; font-size: 10px; font-weight: 700; }.text-button:hover { text-decoration: underline; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); }
+.dashboard { margin-top: 18px; padding: clamp(19px, 3vw, 25px); }
+.dashboard h3 { margin: 0 0 8px; font-size: 18px; }
+.dashboard h4 { margin: 20px 0 10px; font-size: 15px; }
+.dashboard p { margin: 8px 0; color: var(--muted); font-size: 13px; }
+.dashboard-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px; margin-top: 16px; }
+.dashboard-totals div { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 9px; overflow-wrap: anywhere; }
+.dashboard-totals span, .dashboard-totals strong { display: block; }
+.dashboard-totals span { color: var(--muted); font-size: 13px; }
+.dashboard-totals strong { color: var(--green); }
+#dashboard-ranking { display: grid; gap: 12px; padding-left: 1.5em; }
+#dashboard-ranking li { min-width: 0; padding: 0 0 12px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.dashboard-entry { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; }
+.dashboard-bar { height: 8px; margin: 8px 0; border-radius: 8px; background: var(--bg-soft); overflow: hidden; }
+.dashboard-bar span { display: block; height: 100%; background: var(--green); }
 .saved-estimates { margin-top: 18px; padding: clamp(19px, 3vw, 25px); }
 .saved-estimates h3 { margin: 0 0 8px; font-size: 18px; }
 .saved-estimates p { margin: 6px 0; color: var(--muted); font-size: 13px; }
@@ -213,7 +227,7 @@ label { display: block; margin-bottom: 7px; color: var(--text); font-size: 11px;
   .compare-fields input { font-size: 12px; }.comparison-grid, .guide-grid, .tariff-results-grid, .charging-results-grid { grid-template-columns: 1fr; }.compare-toolbar { align-items: flex-start; flex-direction: column; }.compare-summary { align-items: flex-start; flex-direction: column; gap: 7px; }
   .simulator-callout { align-items: flex-start; flex-direction: column; padding: 21px; }.simulator-callout h2 { font-size: 21px; }.footer-main { align-items: flex-start; flex-direction: column; gap: 10px; }.site-footer nav { gap: 12px; }.footer-bottom { flex-direction: column; gap: 3px; }
   .content-main { padding-block: 43px 65px; }.article .lead { font-size: 15px; }.article p, .article li { font-size: 14px; }.content-card-grid { grid-template-columns: 1fr; }
-  .bill-form .field-grid { grid-template-columns: minmax(0, 1fr); }
+  .bill-form .field-grid, .solar-form .field-grid { grid-template-columns: minmax(0, 1fr); }
   .bill-breakdown li { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; }
   .bill-breakdown li span:last-child { grid-column: 1 / -1; }
 }

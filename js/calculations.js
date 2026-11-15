@@ -140,6 +140,35 @@ export function calculateChargingCost({
   };
 }
 
+export function calculateSolar({
+  capacityKwp, annualYield, selfConsumptionPercent, purchasePrice,
+  saleEnabled, salePrice = 0, installationCost = null
+}) {
+  const values = { capacityKwp, annualYield, selfConsumptionPercent, purchasePrice };
+  if (typeof saleEnabled !== "boolean") throw new TypeError("Indiquez si la vente du surplus est activée.");
+  if (saleEnabled) values.salePrice = salePrice;
+  if (installationCost !== null) values.installationCost = installationCost;
+  for (const [key, value] of Object.entries(values)) {
+    if (!Number.isFinite(value)) throw new TypeError(`${key} doit être un nombre valide.`);
+    if (value < 0) throw new RangeError(`${key} ne peut pas être négatif.`);
+  }
+  if (selfConsumptionPercent > 100) throw new RangeError("Le taux d’autoconsommation doit être compris entre 0 et 100 %.");
+
+  const productionKwh = capacityKwp * annualYield;
+  const selfConsumedKwh = productionKwh * (selfConsumptionPercent / 100);
+  const surplusKwh = productionKwh - selfConsumedKwh;
+  const savings = selfConsumedKwh * purchasePrice;
+  const saleRevenue = saleEnabled ? surplusKwh * salePrice : 0;
+  const annualGrossGain = savings + saleRevenue;
+  const paybackYears = installationCost !== null && annualGrossGain > 0
+    ? installationCost / annualGrossGain : null;
+  if (![productionKwh, selfConsumedKwh, surplusKwh, savings, saleRevenue, annualGrossGain].every(Number.isFinite)
+    || (paybackYears !== null && !Number.isFinite(paybackYears))) {
+    throw new RangeError("Les valeurs saisies produisent un résultat hors limites.");
+  }
+  return { productionKwh, selfConsumedKwh, surplusKwh, savings, saleRevenue, annualGrossGain, paybackYears };
+}
+
 export function calculateElectricityBill({
   consumption,
   consumptionPeriod,
